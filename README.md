@@ -10,13 +10,13 @@ change log
 ```
 
 ##How To Compile
-### Use DSO
+- Build
 ```
 apxs -c -D__MOD_APACHE2__ mod_resource_checker.c
 cp ./.libs/mod_resource_checker.so /usr/local/apache2/modules
 ```
 
-### add to  httpd.conf
+- Add to  httpd.conf
 ```
 LoadModule resource_checker_module libexec/mod_resource_checker.so
 ```
@@ -27,9 +27,10 @@ LoadModule resource_checker_module libexec/mod_resource_checker.so
 nothing
 
 ### Directive Config
-
-     log file: /tmp/mod_resource_checker.log
-           or #define MOD_RESOURCE_CHECKER_LOG_FILE "/tmp/mod_resource_checker.log"
+log file is 
+`/tmp/mod_resource_checker.log` by default
+or 
+`#define MOD_RESOURCE_CHECKER_LOG_FILE "/tmp/hoge/mod_resource_checker.log"`
 
 - Logging CPUUserTime
 ```
