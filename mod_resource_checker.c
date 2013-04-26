@@ -89,6 +89,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <time.h>
+#include <json/json.h>
 
 #if defined (__MOD_APACHE1__) && defined (__MOD_APACHE2__)
 #error Ouch!!
@@ -104,6 +105,8 @@
 #include <syslog.h>
 #endif
 
+#define ON                    1
+#define OFF                   0
 
 /* ------------------------ */
 /* --- Macro Difinition --- */
@@ -138,6 +141,7 @@ typedef struct resource_checker_dir_conf {
     char   *stime_process_type;
     char   *mem_process_type;
     char   *target_dir;
+    int    json_fmt;
 
 } RESOURCE_CHECKER_D_CONF;
 
@@ -212,11 +216,24 @@ void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, apr_pool_t 
 /* ------------------------------------------- */
 /* --- Request Transaction Logging Routine --- */
 /* ------------------------------------------- */
+
+static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
+{
+    char *val;
+
+    if (str == NULL) {
+        val = apr_pstrdup(p, "null");
+        return val;
+    }
+
+    return str;
+}
+
 #ifdef __MOD_APACHE1__
-void _mod_resource_checker_logging(double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, pool *p)
+void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, const char *type, const char *unit, pool *p)
 #endif
 #ifdef __MOD_APACHE2__
-void _mod_resource_checker_logging(double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, apr_pool_t *p)
+void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, const char *type, const char *unit, apr_pool_t *p)
 #endif
 {
     int len;
@@ -232,19 +249,40 @@ void _mod_resource_checker_logging(double resource_time, double threshold, char 
     len = strlen(log_time);
     log_time[len - 1] = '\0';
          
-    mod_resource_checker_log_buf = (char *)ap_psprintf(p
-            //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s) access_file=(%s) access_uri=(%s)\n"
-            , "[%s] pid=%d %s %.5f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s)\n"
-            , log_time
-            , getpid()
-            , msg
-            , resource_time
-            , process_type
-            , threshold
-            , pDirConf->target_dir
-            , pAccessInfoData->access_src_ip
-            , pAccessInfoData->access_file
-    );
+    if (pDirConf->json_fmt == ON) {
+        json_object *log_obj;
+        log_obj = json_object_new_object();
+        json_object_object_add(log_obj, "time", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
+        json_object_object_add(log_obj, "msg", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
+        json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
+        json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
+        json_object_object_add(log_obj, "name", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
+        json_object_object_add(log_obj, "document_root", json_object_new_string(ap_mrb_string_check(r->pool, pDirConf->target_dir)));
+        json_object_object_add(log_obj, "src_ip", json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_src_ip)));
+        json_object_object_add(log_obj, "file", json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_file)));
+        json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
+        json_object_object_add(log_obj, "threshold", json_object_new_double(threshold));
+        json_object_object_add(log_obj, "result", json_object_new_double(resource_time));
+        
+        char *val = (char *)json_object_to_json_string(log_obj);
+        mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", val);
+    } else {
+        mod_resource_checker_log_buf = (char *)ap_psprintf(p
+                //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s) access_file=(%s) access_uri=(%s)\n"
+                , "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s)\n"
+                , log_time
+                , getpid()
+                , msg
+                , type
+                , unit
+                , resource_time
+                , process_type
+                , threshold
+                , pDirConf->target_dir
+                , pAccessInfoData->access_src_ip
+                , pAccessInfoData->access_file
+        );
+    }
          
 #ifdef __MOD_APACHE1__
         fputs(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
@@ -325,6 +363,7 @@ static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
     pDirConf->cpu_utime  = INITIAL_VALUE;
     pDirConf->cpu_stime  = INITIAL_VALUE;
     pDirConf->shared_mem = INITIAL_VALUE;
+    pDirConf->json_fmt   = OFF;
 
     if (dir == NULL) {
         pDirConf->target_dir = ap_pstrdup(p, "DocumentRoot");
@@ -456,6 +495,14 @@ set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *a
     RESOURCE_CHECKER_DEBUG_SYSLOG("set_shared_mem_resouce: ", "end", cmd->pool);
 #endif
 
+    return NULL;
+}
+
+
+static const char *set_json_fmt_resource(cmd_parms *cmd, void *dir_config_fmt, int enable)
+{
+    RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+    pDirConf->json_fmt = enable;
     return NULL;
 }
 
@@ -788,34 +835,43 @@ static int after_resource_checker(request_rec *r)
 #endif
 
     if (pDirConf->cpu_utime > INITIAL_VALUE && pAnalysisResouceNow->cpu_utime >= pDirConf->cpu_utime) {
-        _mod_resource_checker_logging(pAnalysisResouceNow->cpu_utime
+        _mod_resource_checker_logging(r
+            ,pAnalysisResouceNow->cpu_utime
             , pDirConf->cpu_utime
             , pDirConf->utime_process_type
             , pDirConf
             , pAccessInfoData
-            , "RESOURCE_CHECKER: [ RCheckUCPU(sec) ="
+            , "RESOURCE_CHECKER"
+            , "RCheckUCPU"
+            , "sec"
             , r->pool
         );
     }
 
     if (pDirConf->cpu_stime > INITIAL_VALUE && pAnalysisResouceNow->cpu_stime >= pDirConf->cpu_stime) {
-        _mod_resource_checker_logging(pAnalysisResouceNow->cpu_stime
+        _mod_resource_checker_logging(r
+            , pAnalysisResouceNow->cpu_stime
             , pDirConf->cpu_stime
             , pDirConf->stime_process_type
             , pDirConf
             , pAccessInfoData
-            , "RESOURCE_CHECKER: [ RCheckSCPU(sec) ="
+            , "RESOURCE_CHECKER"
+            , "RCheckSCPU"
+            , "sec"
             , r->pool
         );
     }
 
     if (pDirConf->shared_mem > INITIAL_VALUE && pAnalysisResouceNow->shared_mem >= pDirConf->shared_mem) {
-        _mod_resource_checker_logging(pAnalysisResouceNow->shared_mem
+        _mod_resource_checker_logging(r
+            , pAnalysisResouceNow->shared_mem
             , pDirConf->shared_mem
             , pDirConf->mem_process_type
             , pDirConf
             , pAccessInfoData
-            , "RESOURCE_CHECKER: [ RCheckMEM(MB) ="
+            , "RESOURCE_CHECKER"
+            , "RCheckMEM"
+            , "MB"
             , r->pool
         );
     }
@@ -834,6 +890,7 @@ static const command_rec resource_checker_cmds[] = {
     AP_INIT_TAKE2("RCheckUCPU", (void *)set_cpu_utime_resouce, NULL, OR_ALL, "Set Resource Checker User CPU Time."),
     AP_INIT_TAKE2("RCheckSCPU", (void *)set_cpu_stime_resouce, NULL, OR_ALL, "Set Resource Checker System CPU Time."),
     AP_INIT_TAKE2("RCheckMEM", (void *)set_shared_mem_resouce, NULL, OR_ALL, "Set Resource Checker Process Memory."),
+    AP_INIT_FLAG("RCheckJSONFormat", set_json_fmt_resource,    NULL, OR_ALL, "Output by JSON Format."),
     {NULL}
 };
 
