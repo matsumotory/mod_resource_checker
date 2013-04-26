@@ -230,10 +230,10 @@ static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
 }
 
 #ifdef __MOD_APACHE1__
-void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, const char *type, const char *unit, pool *p)
+static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, const char *type, const char *unit, pool *p)
 #endif
 #ifdef __MOD_APACHE2__
-void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, const char *type, const char *unit, apr_pool_t *p)
+static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData, const char *msg, const char *type, const char *unit, apr_pool_t *p)
 #endif
 {
     int len;
@@ -269,7 +269,7 @@ void _mod_resource_checker_logging(request_rec *r, double resource_time, double 
     } else {
         mod_resource_checker_log_buf = (char *)ap_psprintf(p
                 //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s) access_file=(%s) access_uri=(%s)\n"
-                , "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s)\n"
+                , "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s) request=(%s)\n"
                 , log_time
                 , getpid()
                 , msg
@@ -281,6 +281,7 @@ void _mod_resource_checker_logging(request_rec *r, double resource_time, double 
                 , pDirConf->target_dir
                 , pAccessInfoData->access_src_ip
                 , pAccessInfoData->access_file
+                , r->the_request
         );
     }
          
@@ -901,7 +902,7 @@ static void resource_checker_register_hooks(apr_pool_t *p)
 {
     ap_hook_post_config((void*)resource_checker_init, NULL, NULL, APR_HOOK_MIDDLE);
     ap_hook_access_checker(before_resource_checker, NULL, NULL, APR_HOOK_LAST);
-    ap_hook_log_transaction(after_resource_checker, NULL, NULL, APR_HOOK_MIDDLE);
+    ap_hook_log_transaction(after_resource_checker, NULL, NULL, APR_HOOK_LAST);
 }
 
 module AP_MODULE_DECLARE_DATA resource_checker_module = {
