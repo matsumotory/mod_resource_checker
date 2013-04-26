@@ -27,7 +27,7 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 
 ##How To Use
 ### Server Config
-log file name (default /tmp/mod_resource_checker.log if no setting)
+- log file name (default /tmp/mod_resource_checker.log if no setting)
 
 ```
 RCheckLogPath "/usr/local/apache/logs/resoruce.log"
@@ -35,7 +35,7 @@ RCheckLogPath "/usr/local/apache/logs/resoruce.log"
 
 or
 
-if enable JSON Format `RCheckJSONFormat On`, for exmaple, 
+- if enable JSON Format `RCheckJSONFormat On`, for exmaple, 
 
 ```
 RCheckLogPath "| mongoimport -d apache -c resource_check"
