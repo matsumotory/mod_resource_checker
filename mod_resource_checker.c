@@ -706,13 +706,17 @@ _get_rusage_resource(apr_pool_t *p, char *type, char *member)
 /* ----------------------------------------------- */
 static int before_resource_checker(request_rec *r)
 {
+    RESOURCE_CHECKER_D_CONF *pDirConf = 
+        (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+    
+    if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
+        return DECLINED;
+
     int match;
     struct stat sb;
 
     pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(r->pool, sizeof(RESOURCE_DATA));
 
-    RESOURCE_CHECKER_D_CONF *pDirConf;
-    pDirConf = (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
 
 #ifdef __MOD_DEBUG__
     RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", "start", r->pool);
@@ -796,6 +800,12 @@ static int before_resource_checker(request_rec *r)
 /* ------------------------------------------------- */
 static int after_resource_checker(request_rec *r)
 {
+    RESOURCE_CHECKER_D_CONF *pDirConf = 
+        (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+
+    if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
+        return DECLINED;
+
     int match;
     struct stat sb;
     RESOURCE_DATA *pAnalysisResouceAfter;
@@ -803,8 +813,6 @@ static int after_resource_checker(request_rec *r)
     RESOURCE_DATA *pAnalysisResouceNow;
     pAnalysisResouceNow = (RESOURCE_DATA *)ap_pcalloc(r->pool, sizeof(RESOURCE_DATA));
 
-    RESOURCE_CHECKER_D_CONF *pDirConf;
-    pDirConf = (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
 
     ACCESS_INFO *pAccessInfoData;
     pAccessInfoData = (ACCESS_INFO *)ap_pcalloc(r->pool, sizeof(ACCESS_INFO));
