@@ -703,7 +703,11 @@ static int after_resource_checker(request_rec *r)
 
     pAccessInfoData->access_uri      = r->uri;
     pAccessInfoData->access_file     = r->filename;
+#if (AP_SERVER_MINORVERSION_NUMBER > 2)
+    pAccessInfoData->access_src_ip   = r->connection->client_ip;
+#else
     pAccessInfoData->access_src_ip   = r->connection->remote_ip;
+#endif
     pAccessInfoData->access_dst_host = r->server->server_hostname;
 
 #ifdef __MOD_DEBUG__
