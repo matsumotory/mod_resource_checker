@@ -262,18 +262,17 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     if (pDirConf->json_fmt == ON) {
         json_object *log_obj;
         log_obj = json_object_new_object();
-        json_object_object_add(log_obj, "msg", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
-        json_object_object_add(log_obj, "time", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
-        json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
-        json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
-        json_object_object_add(log_obj, "document_root", json_object_new_string(ap_mrb_string_check(r->pool, pDirConf->target_dir)));
-        json_object_object_add(log_obj, "src_ip", json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_src_ip)));
-        json_object_object_add(log_obj, "file", json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_file)));
-        json_object_object_add(log_obj, "request", json_object_new_string(ap_mrb_string_check(r->pool, r->the_request)));
-
-        json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
-        json_object_object_add(log_obj, "threshold", json_object_new_double(threshold));
-        json_object_object_add(log_obj, "result", json_object_new_double(resource_time));
+        json_object_object_add(log_obj, "msg",        json_object_new_string(ap_mrb_string_check(r->pool, msg)));
+        json_object_object_add(log_obj, "time",       json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
+        json_object_object_add(log_obj, "type",       json_object_new_string(ap_mrb_string_check(r->pool, type)));
+        json_object_object_add(log_obj, "unit",       json_object_new_string(ap_mrb_string_check(r->pool, unit)));
+        json_object_object_add(log_obj, "target_dir", json_object_new_string(ap_mrb_string_check(r->pool, pDirConf->target_dir)));
+        json_object_object_add(log_obj, "src_ip",     json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_src_ip)));
+        json_object_object_add(log_obj, "file",       json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_file)));
+        json_object_object_add(log_obj, "request",    json_object_new_string(ap_mrb_string_check(r->pool, r->the_request)));
+        json_object_object_add(log_obj, "pid",        json_object_new_int(getpid()));
+        json_object_object_add(log_obj, "threshold",  json_object_new_double(threshold));
+        json_object_object_add(log_obj, "result",     json_object_new_double(resource_time));
         
         mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
     } else {
@@ -297,7 +296,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
          
 #ifdef __MOD_APACHE1__
         fputs(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
-        fflush(mod_la_log_fp);
+        fflush(mod_resource_checker_log_fp);
 #endif
 #ifdef __MOD_APACHE2__
         apr_file_puts(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
