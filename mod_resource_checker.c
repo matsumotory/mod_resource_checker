@@ -76,6 +76,8 @@
 #include "http_core.h"
 #include "http_protocol.h"
 #include "ap_config.h"
+#include "http_log.h"
+#include "apr_strings.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -105,6 +107,8 @@
 #include <syslog.h>
 #endif
 
+#define MODULE_NAME           "mod_request_checker"
+#define MODULE_VERSION        "0.9.1"
 #define ON                    1
 #define OFF                   0
 
@@ -116,7 +120,7 @@
 #define MOD_RESOURCE_CHECKER_LOG_FILE       "/tmp/mod_resource_checker.log"
 #endif
 #ifdef __MOD_APACHE2__
-#define MOD_RESOURCE_CHECKERLOG_FILE       "/tmp/mod_resource_checker.log"
+#define RESOURCE_CHECKER_DEFAULT_LOG_FILE   "/tmp/mod_resource_checker.log"
 #define ap_palloc apr_palloc
 #define ap_pcalloc apr_pcalloc
 #define ap_psprintf apr_psprintf
@@ -161,6 +165,12 @@ typedef struct client_access_data {
     char *access_dst_host;    
 
 } ACCESS_INFO;
+
+typedef struct resource_checker_conf {
+
+    char *log_filename;
+
+} RESOURCE_CHECKER_CONF;
 
 
 /* ----------------------------------- */
@@ -311,6 +321,60 @@ static void resource_checker_init(server_rec *server, pool *p)
 static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp, server_rec *server)
 #endif
 {
+    RESOURCE_CHECKER_CONF *conf = ap_get_module_config(server->module_config, &resource_checker_module);
+
+    if (*conf->log_filename == '|') {
+        piped_log *pl;
+
+        pl = ap_open_piped_log(p, conf->log_filename + 1);
+        if (pl == NULL) {
+            ap_log_error(APLOG_MARK
+                , APLOG_ERR
+                , 0
+                , NULL
+                , "%s ERROR %s: rchecker pipe log oepn failed: %s"
+                , MODULE_NAME
+                , __func__
+                , conf->log_filename
+            );
+
+            return OK;
+        }
+
+        mod_resource_checker_log_fp = ap_piped_log_write_fd(pl);
+
+    } else {
+        if(apr_file_open(&mod_resource_checker_log_fp, conf->log_filename, APR_WRITE|APR_APPEND|APR_CREATE,
+               APR_OS_DEFAULT, p) != APR_SUCCESS){
+            ap_log_error(APLOG_MARK
+                , APLOG_ERR
+                , 0
+                , NULL
+                , "%s ERROR %s: rchecker log file oepn failed: %s"
+                , MODULE_NAME
+                , __func__
+                , conf->log_filename
+            );
+
+            return OK;
+        }
+    }
+
+    ap_log_perror(APLOG_MARK
+        , APLOG_NOTICE
+        , 0
+        , p
+        , "%s %s: %s / %s mechanism enabled."
+        , MODULE_NAME
+        , __func__
+        , MODULE_NAME
+        , MODULE_VERSION
+    );
+
+    resource_checker_initialized = 1;
+
+    return OK;
+/*
     struct stat;
 
 #ifdef __MOD_DEBUG__
@@ -342,6 +406,7 @@ static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *pt
 #ifdef __MOD_APACHE2__
     return OK;
 #endif
+*/
 }
 
 
@@ -377,6 +442,16 @@ static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
 #endif
 
     return pDirConf;
+}
+
+static void *resource_checker_create_config(apr_pool_t *p, server_rec *s)
+{
+    RESOURCE_CHECKER_CONF *conf =
+        (RESOURCE_CHECKER_CONF *) apr_pcalloc(p, sizeof (*conf));
+
+    conf->log_filename = apr_pstrdup(p, RESOURCE_CHECKER_DEFAULT_LOG_FILE);
+ 
+    return conf;
 }
 
 
@@ -507,6 +582,13 @@ static const char *set_json_fmt_resource(cmd_parms *cmd, void *dir_config_fmt, i
     return NULL;
 }
 
+
+static const char *set_rcheck_logname(cmd_parms *cmd, void *dir_config_fmt, const char *log_filename)
+{
+    RESOURCE_CHECKER_CONF *conf = ap_get_module_config(cmd->server->module_config, &resource_checker_module);
+    conf->log_filename = apr_pstrdup(cmd->pool, log_filename);
+    return NULL;
+}
 
 /* --------------------------- */
 /* --- get rutime (doubel) --- */
@@ -888,10 +970,11 @@ static int after_resource_checker(request_rec *r)
 /* --- Command_rec --- */
 /* ------------------- */
 static const command_rec resource_checker_cmds[] = {
-    AP_INIT_TAKE2("RCheckUCPU", (void *)set_cpu_utime_resouce, NULL, OR_ALL, "Set Resource Checker User CPU Time."),
-    AP_INIT_TAKE2("RCheckSCPU", (void *)set_cpu_stime_resouce, NULL, OR_ALL, "Set Resource Checker System CPU Time."),
-    AP_INIT_TAKE2("RCheckMEM", (void *)set_shared_mem_resouce, NULL, OR_ALL, "Set Resource Checker Process Memory."),
-    AP_INIT_FLAG("RCheckJSONFormat", set_json_fmt_resource,    NULL, OR_ALL, "Output by JSON Format."),
+    AP_INIT_TAKE2("RCheckUCPU",         (void *)set_cpu_utime_resouce,  NULL, OR_ALL, "Set Resource Checker User CPU Time."),
+    AP_INIT_TAKE2("RCheckSCPU",         (void *)set_cpu_stime_resouce,  NULL, OR_ALL, "Set Resource Checker System CPU Time."),
+    AP_INIT_TAKE2("RCheckMEM",          (void *)set_shared_mem_resouce, NULL, OR_ALL, "Set Resource Checker Process Memory."),
+    AP_INIT_FLAG("RCheckJSONFormat",    set_json_fmt_resource,          NULL, OR_ALL, "Output by JSON Format."),
+    AP_INIT_TAKE1("RCheckLogPath",      set_rcheck_logname,             NULL, RSRC_CONF | ACCESS_CONF, "RCheck log name."),
     {NULL}
 };
 
@@ -909,7 +992,7 @@ module AP_MODULE_DECLARE_DATA resource_checker_module = {
     STANDARD20_MODULE_STUFF,
     (void*)resource_checker_create_dir_config,      /* create per-dir    config structures */
     NULL,                                   /* merge  per-dir    config structures */
-    NULL,                                   /* create per-server config structures */
+    (void*)resource_checker_create_config,                                   /* create per-server config structures */
     NULL,                                   /* merge  per-server config structures */
     resource_checker_cmds,                          /* table of config file commands       */
     resource_checker_register_hooks                 /* register hooks                      */
