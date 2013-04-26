@@ -51,6 +51,10 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
     ```
     RCheckJSONFormat On
     ```
+    
+    ```
+    { "msg": "RESOURCE_CHECKER", "time": "Sat Apr 27 00:37:41 2013", "type": "RCheckUCPU", "unit": "sec", "target_dir": "\/var\/www\/html\/", "src_ip": "192.168.12.10", "file": "\/var\/www\/html\/info.php", "request": "GET \/info.php HTTP\/1.1", "pid": 24045, "threshold": 0.000010, "result": 0.003000 }
+    ```
 
     or below log format by default if no setting
 
