@@ -16,13 +16,12 @@ change log
 - Build
 ```
 (optional) yum install json-c json-c-devel
-apxs -ljson -c -D__MOD_APACHE2__ mod_resource_checker.c
-cp ./.libs/mod_resource_checker.so /usr/local/apache2/modules
+apxs -ljson -i -c -D__MOD_APACHE2__ mod_resource_checker.c
 ```
 
 - Add to  httpd.conf
 ```
-LoadModule resource_checker_module libexec/mod_resource_checker.so
+LoadModule resource_checker_module modules/mod_resource_checker.so
 ```
 
 
