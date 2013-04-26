@@ -35,10 +35,10 @@ RCheckLogPath "/usr/local/apache/logs/resoruce.log"
 
 or
 
-if enable JSON Format `RCheckJSONFormat On`
+if enable JSON Format `RCheckJSONFormat On`, for exmaple, 
 
 ```
-RCheckLogPath "mongoimport -d apache -c resource_check"
+RCheckLogPath "\ mongoimport -d apache -c resource_check"
 ```
 
 It's very cool.
