@@ -252,20 +252,20 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     if (pDirConf->json_fmt == ON) {
         json_object *log_obj;
         log_obj = json_object_new_object();
-        json_object_object_add(log_obj, "time", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
         json_object_object_add(log_obj, "msg", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
+        json_object_object_add(log_obj, "time", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
         json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
         json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
-        json_object_object_add(log_obj, "name", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
         json_object_object_add(log_obj, "document_root", json_object_new_string(ap_mrb_string_check(r->pool, pDirConf->target_dir)));
         json_object_object_add(log_obj, "src_ip", json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_src_ip)));
         json_object_object_add(log_obj, "file", json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_file)));
+        json_object_object_add(log_obj, "request", json_object_new_string(ap_mrb_string_check(r->pool, r->the_request)));
+
         json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
         json_object_object_add(log_obj, "threshold", json_object_new_double(threshold));
         json_object_object_add(log_obj, "result", json_object_new_double(resource_time));
         
-        char *val = (char *)json_object_to_json_string(log_obj);
-        mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", val);
+        mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
     } else {
         mod_resource_checker_log_buf = (char *)ap_psprintf(p
                 //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s) access_file=(%s) access_uri=(%s)\n"
