@@ -15,7 +15,8 @@ change log
 ##How To Compile
 - Build
 ```
-apxs -c -D__MOD_APACHE2__ mod_resource_checker.c
+(optional) yum install json-c json-c-devel
+apxs -ljson -c -D__MOD_APACHE2__ mod_resource_checker.c
 cp ./.libs/mod_resource_checker.so /usr/local/apache2/modules
 ```
 
