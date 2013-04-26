@@ -29,34 +29,34 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 ### Server Config
 - log file name (default /tmp/mod_resource_checker.log if no setting)
 
-```
-RCheckLogPath "/usr/local/apache/logs/resoruce.log"
-```
-
-or
+    ```
+    RCheckLogPath "/usr/local/apache/logs/resoruce.log"
+    ```
+      
+    or
 
 - if enable JSON Format `RCheckJSONFormat On`, for exmaple, 
 
-```
-RCheckLogPath "| mongoimport -d apache -c resource_check"
-```
+    ```
+    RCheckLogPath "| mongoimport -d apache -c resource_check"
+    ```
 
-It's very cool.
+    It's very cool.
 
 
 ### Directive Config
 - Output Format
-If you want JSON Format
+    If you want JSON Format
 
-```
-RCheckJSONFormat On
-```
+    ```
+    RCheckJSONFormat On
+    ```
 
-or below log format by default if no setting
+    or below log format by default if no setting
 
-```
-[Fri Apr 26 23:11:18 2013] pid=3225 RESOURCE_CHECKER: [ RCheckUCPU(sec) = 0.2969550000 (ALL) > threshold=(0.00001) ] config_dir=(/) src_ip=(192.168.12.1) access_file=(/usr/local/apache244/htdocs/blog/index.php) request=(GET /?p=3414 HTTP/1.0)
-```
+    ```
+    [Fri Apr 26 23:11:18 2013] pid=3225 RESOURCE_CHECKER: [ RCheckUCPU(sec) = 0.2969550000 (ALL) > threshold=(0.00001) ] config_dir=(/) src_ip=(192.168.12.1) access_file=(/usr/local/apache244/htdocs/blog/index.php) request=(GET /?p=3414 HTTP/1.0)
+    ```
 
 - Logging CPUUserTime
 ```
