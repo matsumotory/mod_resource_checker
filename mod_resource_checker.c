@@ -42,12 +42,13 @@
 //
 // - Logging UsedMemory
 //     RCheckMEM <threashould> <type>
-// 
+//
 //     <threashould>    digit(non-zero)
 //
 //     <type>           ALL
 //                      SELF
 //                      CHILD
+//                      THREAD
 //
 // = Directory Access Control -
 // <Directory "/var/www/html">
@@ -162,7 +163,7 @@ typedef struct client_access_data {
     char *access_uri;
     char *access_file;
     char *access_src_ip;
-    char *access_dst_host;    
+    char *access_dst_host;
 
 } ACCESS_INFO;
 
@@ -215,7 +216,7 @@ void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, apr_pool_t 
     char *fs_buf = NULL;
 
     fs_buf = (char *)ap_psprintf(p,"%s%s", key, msg);
-                                    
+
     openlog(NULL, LOG_PID, LOG_SYSLOG);
     syslog(LOG_DEBUG, fs_buf);
     closelog();
@@ -249,7 +250,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     int len;
     time_t t;
     char *log_time;
-     
+
 #ifdef __MOD_DEBUG__
     RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "start", p);
 #endif
@@ -258,7 +259,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     log_time = (char *)ctime(&t);
     len = strlen(log_time);
     log_time[len - 1] = '\0';
-         
+
     if (pDirConf->json_fmt == ON) {
         json_object *log_obj;
         log_obj = json_object_new_object();
@@ -273,7 +274,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
         json_object_object_add(log_obj, "pid",        json_object_new_int(getpid()));
         json_object_object_add(log_obj, "threshold",  json_object_new_double(threshold));
         json_object_object_add(log_obj, "result",     json_object_new_double(resource_time));
-        
+
         mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
     } else {
         mod_resource_checker_log_buf = (char *)ap_psprintf(p
@@ -293,7 +294,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
                 , r->the_request
         );
     }
-         
+
 #ifdef __MOD_APACHE1__
         fputs(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
         fflush(mod_resource_checker_log_fp);
@@ -449,7 +450,7 @@ static void *resource_checker_create_config(apr_pool_t *p, server_rec *s)
         (RESOURCE_CHECKER_CONF *) apr_pcalloc(p, sizeof (*conf));
 
     conf->log_filename = apr_pstrdup(p, RESOURCE_CHECKER_DEFAULT_LOG_FILE);
- 
+
     return conf;
 }
 
@@ -466,8 +467,8 @@ set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *ar
     RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_utime_resouce: ", "start", cmd->pool);
 #endif
 
-    if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "ALL") == -1)
-        return "RCheckUCPU: arg2 is SELF or CHILD or ALL!";
+    if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 && strcmp(arg2, "ALL") == -1)
+        return "RCheckUCPU: arg2 is SELF or CHILD or or THREAD or ALL!";
 
     if (atof(arg1) <= 0)
         return "RCheckUCPU: arg1 must be only a number( > 0 )!";
@@ -506,8 +507,8 @@ set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *ar
     RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_stime_resouce: ", "start", cmd->pool);
 #endif
 
-    if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "ALL") == -1)
-        return "RCheckSCPU: arg2 is SELF or CHILD or ALL!";
+    if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 && strcmp(arg2, "ALL") == -1)
+        return "RCheckSCPU: arg2 is SELF or CHILD or THREAD or ALL!";
 
     if (atof(arg1) <= 0)
         return "RCheckSCPU: arg1 must be only a number( > 0 )!";
@@ -546,8 +547,8 @@ set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *a
     RESOURCE_CHECKER_DEBUG_SYSLOG("set_shared_mem_resouce: ", "start", cmd->pool);
 #endif
 
-    if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "ALL") == -1)
-        return "RCheckMEM: arg2 is SELF or CHILD or ALL!";
+    if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 && strcmp(arg2, "ALL") == -1)
+        return "RCheckMEM: arg2 is SELF or CHILD or THREAD or ALL!";
 
     if (atof(arg1) <= 0)
         return "RCheckMEM: arg1 must be only a number( > 0 )!";
@@ -633,6 +634,12 @@ _get_rusage_resource(apr_pool_t *p, char *type, char *member)
             pAnalysisResouce->cpu_stime = INITIAL_VALUE;
             return -1;
         }
+    } else if (strcmp(type, "THREAD") == 0) {
+        if (getrusage(RUSAGE_THREAD ,resources) == -1) {
+            pAnalysisResouce->cpu_utime = INITIAL_VALUE;
+            pAnalysisResouce->cpu_stime = INITIAL_VALUE;
+            return -1;
+        }
     } else if (strcmp(type, "ALL") == 0) {
         resources_s = (struct rusage *)ap_pcalloc(p, sizeof(struct rusage));
         resources_c = (struct rusage *)ap_pcalloc(p, sizeof(struct rusage));
@@ -696,7 +703,7 @@ _get_rusage_resource(apr_pool_t *p, char *type, char *member)
     } else if (strcmp(member, "shared_mem") == 0) {
         return pAnalysisResouce->shared_mem;
     }
-    
+
     return -1;
 }
 
@@ -706,9 +713,9 @@ _get_rusage_resource(apr_pool_t *p, char *type, char *member)
 /* ----------------------------------------------- */
 static int before_resource_checker(request_rec *r)
 {
-    RESOURCE_CHECKER_D_CONF *pDirConf = 
+    RESOURCE_CHECKER_D_CONF *pDirConf =
         (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
-    
+
     if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
         return DECLINED;
 
@@ -723,7 +730,7 @@ static int before_resource_checker(request_rec *r)
 #endif
 
 
-    if (resource_checker_initialized == 0) { 
+    if (resource_checker_initialized == 0) {
         return OK;
     }
 
@@ -800,7 +807,7 @@ static int before_resource_checker(request_rec *r)
 /* ------------------------------------------------- */
 static int after_resource_checker(request_rec *r)
 {
-    RESOURCE_CHECKER_D_CONF *pDirConf = 
+    RESOURCE_CHECKER_D_CONF *pDirConf =
         (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
 
     if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
@@ -822,7 +829,7 @@ static int after_resource_checker(request_rec *r)
 #endif
 
 
-    if (resource_checker_initialized == 0) { 
+    if (resource_checker_initialized == 0) {
         return OK;
     }
 
@@ -858,7 +865,7 @@ static int after_resource_checker(request_rec *r)
     RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
 #endif
 
-    // threashould check  
+    // threashould check
 
     match = 0;
     pAnalysisResouceAfter->cpu_utime  = INITIAL_VALUE;
@@ -868,7 +875,7 @@ static int after_resource_checker(request_rec *r)
     if (pDirConf->cpu_utime > INITIAL_VALUE) {
         match = 1;
         pAnalysisResouceAfter->cpu_utime  = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
-    } 
+    }
 
     if (pDirConf->cpu_stime > INITIAL_VALUE) {
         match = 1;
