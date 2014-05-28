@@ -179,7 +179,6 @@ typedef struct resource_checker_conf {
 /* ----------------------------------- */
 char mod_resource_checker_version[]           = "mod_version 0.01";
 int resource_checker_initialized              = 0;
-char *mod_resource_checker_log_buf            = NULL;
 RESOURCE_DATA *pAnalysisResouceBefore = NULL;
 
 #ifdef __MOD_APACHE1__
@@ -259,6 +258,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     log_time = (char *)ctime(&t);
     len = strlen(log_time);
     log_time[len - 1] = '\0';
+    char *mod_resource_checker_log_buf;
 
     if (pDirConf->json_fmt == ON) {
         json_object *log_obj;
@@ -276,6 +276,9 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
         json_object_object_add(log_obj, "result",     json_object_new_double(resource_time));
 
         mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
+#ifdef __MOD_DEBUG__
+        RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "json log was created", p);
+#endif
     } else {
         mod_resource_checker_log_buf = (char *)ap_psprintf(p
                 //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s) access_file=(%s) access_uri=(%s)\n"
@@ -293,6 +296,9 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
                 , pAccessInfoData->access_file
                 , r->the_request
         );
+#ifdef __MOD_DEBUG__
+        RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "plain text log was created", p);
+#endif
     }
 
 #ifdef __MOD_APACHE1__
