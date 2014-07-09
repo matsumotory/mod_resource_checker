@@ -1021,7 +1021,11 @@ static void resource_checker_register_hooks(apr_pool_t *p)
     ap_hook_log_transaction(after_resource_checker, NULL, NULL, APR_HOOK_LAST);
 }
 
-module AP_MODULE_DECLARE_DATA resource_checker_module = {
+#if (AP_SERVER_MINORVERSION_NUMBER > 2)
+AP_DECLARE_MODULE(resource_checker) = {
+#else
+  module AP_MODULE_DECLARE_DATA resource_checker_module = {
+#endif
     STANDARD20_MODULE_STUFF,
     (void*)resource_checker_create_dir_config,      /* create per-dir    config structures */
     NULL,                                   /* merge  per-dir    config structures */
