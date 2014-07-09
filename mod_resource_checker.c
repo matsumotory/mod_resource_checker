@@ -179,7 +179,7 @@ typedef struct resource_checker_conf {
 /* ----------------------------------- */
 char mod_resource_checker_version[]           = "mod_version 0.01";
 int resource_checker_initialized              = 0;
-RESOURCE_DATA *pAnalysisResouceBefore = NULL;
+static RESOURCE_DATA *pAnalysisResouceBefore = NULL;
 
 #ifdef __MOD_APACHE1__
 FILE *mod_resource_checker_log_fp = NULL;
@@ -818,6 +818,19 @@ static int after_resource_checker(request_rec *r)
 
     if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
         return DECLINED;
+
+    if (pAnalysisResouceBefore == NULL) {
+       ap_log_rerror(APLOG_MARK
+           , APLOG_NOTICE
+           , 0
+           , r
+           , "%s NOTICE %s: Can not check resource of the request: file = %s"
+           , MODULE_NAME
+           , __func__
+           , r->filename
+        );
+        return DECLINED;
+    }
 
     int match;
     struct stat sb;
