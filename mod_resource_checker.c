@@ -670,6 +670,26 @@ _get_rusage_resource(apr_pool_t *p, char *type, char *member)
     pAnalysisResouce->cpu_stime  = get_time_from_rutime(resources->ru_stime.tv_sec, resources->ru_stime.tv_usec);
     pAnalysisResouce->shared_mem = (((double)resources->ru_minflt * (double)getpagesize() / 1024 / 1024));
 
+    // unexpected value; resource is negative number
+    if (pAnalysisResouce->cpu_utime < 0) {
+      pAnalysisResouce->cpu_utime = 0;
+#ifdef __MOD_DEBUG__
+      RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "cpu_utime is negative number, set 0 for now.", p);
+#endif
+    }
+    if (pAnalysisResouce->cpu_stime < 0) {
+      pAnalysisResouce->cpu_stime = 0;
+#ifdef __MOD_DEBUG__
+      RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "cpu_stime is negative number, set 0 for now.", p);
+#endif
+    }
+    if (pAnalysisResouce->shared_mem < 0) {
+      pAnalysisResouce->shared_mem = 0;
+#ifdef __MOD_DEBUG__
+      RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "shared_mem is negative number, set 0 for now.", p);
+#endif
+    }
+
 #ifdef __MOD_DEBUG__
     fs_debug_resource_checker_log_buf = ap_psprintf(p,
             "type=(%s) ru_utime=(%lf) ru_stime=(%lf) ru_utime.tv_sec=(%ld) ru_utime.tv_usec=(%ld) ru_stime.tv_sec=(%ld) ru_stime.tv_usec=(%ld) ru_ixrss=(%ld) ru_idrss=(%ld) ru_isrss=(%ld) ru_minflt=(%ld) ru_majflt=(%ld) ru_nswap=(%ld) ru_inblock=(%ld) ru_oublock=(%ld) ru_msgsnd=(%ld) ru_msgrcv=(%ld) ru_nsignals=(%ld) ru_nvcsw=(%ld) ru_nivcsw=(%ld) getpagesize=(%d)"
