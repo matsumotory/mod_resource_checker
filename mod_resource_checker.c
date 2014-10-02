@@ -137,6 +137,14 @@
 /* ----------------------------------- */
 /* --- Struct and Typed Definition --- */
 /* ----------------------------------- */
+typedef struct rusage_resouce_data {
+
+    double cpu_utime;
+    double cpu_stime;
+    double shared_mem;
+
+} RESOURCE_DATA;
+
 typedef struct resource_checker_dir_conf {
 
     double cpu_utime;
@@ -147,16 +155,9 @@ typedef struct resource_checker_dir_conf {
     char   *mem_process_type;
     char   *target_dir;
     int    json_fmt;
+    RESOURCE_DATA *pAnalysisResouceBefore;
 
 } RESOURCE_CHECKER_D_CONF;
-
-typedef struct rusage_resouce_data {
-
-    double cpu_utime;
-    double cpu_stime;
-    double shared_mem;
-
-} RESOURCE_DATA;
 
 typedef struct client_access_data {
 
@@ -179,7 +180,6 @@ typedef struct resource_checker_conf {
 /* ----------------------------------- */
 char mod_resource_checker_version[]           = "mod_version 0.01";
 int resource_checker_initialized              = 0;
-static RESOURCE_DATA *pAnalysisResouceBefore = NULL;
 
 #ifdef __MOD_APACHE1__
 FILE *mod_resource_checker_log_fp = NULL;
@@ -436,6 +436,7 @@ static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
     pDirConf->cpu_stime  = INITIAL_VALUE;
     pDirConf->shared_mem = INITIAL_VALUE;
     pDirConf->json_fmt   = OFF;
+    pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));;
 
     if (dir == NULL) {
         pDirConf->target_dir = ap_pstrdup(p, "DocumentRoot");
@@ -741,15 +742,13 @@ static int before_resource_checker(request_rec *r)
 {
     RESOURCE_CHECKER_D_CONF *pDirConf =
         (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+    RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
 
     if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
         return DECLINED;
 
     int match;
     struct stat sb;
-
-    pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(r->pool, sizeof(RESOURCE_DATA));
-
 
 #ifdef __MOD_DEBUG__
     RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", "start", r->pool);
@@ -835,6 +834,7 @@ static int after_resource_checker(request_rec *r)
 {
     RESOURCE_CHECKER_D_CONF *pDirConf =
         (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+    RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
 
     if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE && pDirConf->shared_mem == INITIAL_VALUE)
         return DECLINED;
