@@ -958,6 +958,26 @@ static int after_resource_checker(request_rec *r)
     pAnalysisResouceNow->cpu_utime  = pAnalysisResouceAfter->cpu_utime - pAnalysisResouceBefore->cpu_utime;
     pAnalysisResouceNow->cpu_stime =  pAnalysisResouceAfter->cpu_stime - pAnalysisResouceBefore->cpu_stime;
     pAnalysisResouceNow->shared_mem = pAnalysisResouceAfter->shared_mem - pAnalysisResouceBefore->shared_mem;
+    
+    // unexpected value; resource is negative number
+    if (pAnalysisResouceNow->cpu_utime < 0) {
+      pAnalysisResouceNow->cpu_utime = 0;
+#ifdef __MOD_DEBUG__
+      RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "cpu_utime is negative number, set 0 for now.", r->pool);
+#endif
+    }
+    if (pAnalysisResouceNow->cpu_stime < 0) {
+      pAnalysisResouceNow->cpu_stime = 0;
+#ifdef __MOD_DEBUG__
+      RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "cpu_stime is negative number, set 0 for now.", r->pool);
+#endif
+    }
+    if (pAnalysisResouceNow->shared_mem < 0) {
+      pAnalysisResouceNow->shared_mem = 0;
+#ifdef __MOD_DEBUG__
+      RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "shared_mem is negative number, set 0 for now.", r->pool);
+#endif
+    }
 
 #ifdef __MOD_DEBUG__
     fs_debug_resource_checker_log_buf = ap_psprintf(r->pool,
