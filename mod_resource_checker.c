@@ -248,7 +248,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     mod_resource_checker_log_buf = (char *)ap_psprintf(
         p
         //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s)
-        //access_file=(%s) access_uri=(%s)\n"
+        // access_file=(%s) access_uri=(%s)\n"
         ,
         "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s) "
         "request=(%s)\n",
