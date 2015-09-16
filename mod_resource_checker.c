@@ -225,13 +225,17 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     json_object_object_add(log_obj, "time", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
     json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
     json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
-    json_object_object_add(log_obj, "target_dir",
+    json_object_object_add(log_obj, "location",
                            json_object_new_string(ap_mrb_string_check(r->pool, pDirConf->target_dir)));
-    json_object_object_add(log_obj, "src_ip",
+    json_object_object_add(log_obj, "remote_ip",
                            json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_src_ip)));
-    json_object_object_add(log_obj, "file",
+    json_object_object_add(log_obj, "filename",
                            json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_file)));
-    json_object_object_add(log_obj, "request", json_object_new_string(ap_mrb_string_check(r->pool, r->the_request)));
+    json_object_object_add(log_obj, "method", json_object_new_string(ap_mrb_string_check(r->pool, r->method)));
+    json_object_object_add(log_obj, "hostname", json_object_new_string(ap_mrb_string_check(r->pool, r->hostname)));
+    json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
+    json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
+    json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
     json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
     json_object_object_add(log_obj, "threshold", json_object_new_double(threshold));
     json_object_object_add(log_obj, "result", json_object_new_double(resource_time));
