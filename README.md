@@ -1,22 +1,12 @@
 # mod_resource_checker.c
-Process Resource Logging Module by rusage() By matsumoto_r Sep 2009 in Japan
 
-- Date     2009/12/08 - 2013/04/27
-- Version  0.9.1
-
-```
-change log
-2009/12/08 matsumoto_r coding start
-2013/04/27 matsumoto_r Support 2.4
-2013/04/27 matsumoto_r Support JSON Format
-2013/04/27 matsumoto_r Support Select log filename or Piped log
-```
+Process Resource Logging Module
 
 ##How To Compile
 - Build
 ```
 (optional) yum install json-c json-c-devel
-apxs -ljson -i -c -D__MOD_APACHE2__ mod_resource_checker.c
+make
 ```
 
 - Add to  httpd.conf
