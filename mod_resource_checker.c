@@ -48,8 +48,12 @@
 #include <time.h>
 #include <json/json.h>
 
-#if defined(__MOD_APACHE1__) && defined(__MOD_APACHE2__)
-#error Ouch!!
+#if (AP_SERVER_MINORVERSION_NUMBER > 2)
+#define __APACHE24__
+#endif
+
+#if (AP_SERVER_MAJORVERSION_NUMBER > 1)
+#define __MOD_APACHE2__
 #endif
 
 #ifdef __MOD_APACHE1__
@@ -63,7 +67,7 @@
 #endif
 
 #define MODULE_NAME "mod_request_checker"
-#define MODULE_VERSION "0.9.1"
+#define MODULE_VERSION "0.0.1"
 #define ON 1
 #define OFF 0
 
