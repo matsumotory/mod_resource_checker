@@ -231,6 +231,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
                            json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_src_ip)));
     json_object_object_add(log_obj, "filename",
                            json_object_new_string(ap_mrb_string_check(r->pool, pAccessInfoData->access_file)));
+    json_object_object_add(log_obj, "scheme", json_object_new_string(ap_mrb_string_check(r->pool, ap_http_scheme(r))));
     json_object_object_add(log_obj, "method", json_object_new_string(ap_mrb_string_check(r->pool, r->method)));
     json_object_object_add(log_obj, "hostname", json_object_new_string(ap_mrb_string_check(r->pool, r->hostname)));
     json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
