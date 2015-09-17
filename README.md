@@ -35,7 +35,7 @@ make
 ```
 
 - Add to  httpd.conf
-```
+```apache
 LoadModule resource_checker_module modules/mod_resource_checker.so
 ```
 
