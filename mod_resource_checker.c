@@ -67,7 +67,7 @@
 #endif
 
 #define MODULE_NAME "mod_request_checker"
-#define MODULE_VERSION "0.0.1"
+#define MODULE_VERSION "0.1.1"
 #define ON 1
 #define OFF 0
 
