@@ -222,7 +222,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     json_object *log_obj;
     log_obj = json_object_new_object();
     json_object_object_add(log_obj, "msg", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
-    json_object_object_add(log_obj, "time", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
+    json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
     json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
     json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
     json_object_object_add(log_obj, "location",
