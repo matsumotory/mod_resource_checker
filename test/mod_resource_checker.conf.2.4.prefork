@@ -6,7 +6,7 @@ RCheckLogPath /tmp/resource.log
 <VirtualHost 127.0.0.1:8080>
     DocumentRoot __VHOST_DOCROOT__
     ServerName test001.example.local
-    RCheckSCPU 0.001 ALL
-    RCheckUCPU 0.001 ALL
-    RCheckMEM  0.1 ALL
+    RCheckSCPU 0.00001 ALL
+    RCheckUCPU 0.00001 ALL
+    RCheckMEM  0.001 ALL
 </VirtualHost>
