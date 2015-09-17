@@ -2,6 +2,10 @@
 
 Process Resource Logging Module using JSON format into file or piped program.
 
+```
+tail -n 1 /path/to/resource.log | jq .
+```
+
 ```json
 {
   "module": "mod_request_checker",
