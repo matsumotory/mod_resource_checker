@@ -309,8 +309,7 @@ static void resource_checker_init(server_rec *server, pool *p)
     }
   }
 
-  ap_log_perror(APLOG_MARK, APLOG_NOTICE, 0, p, "%s %s: %s / %s mechanism enabled.", MODULE_NAME, __func__, MODULE_NAME,
-                MODULE_VERSION);
+  ap_log_perror(APLOG_MARK, APLOG_NOTICE, 0, p, "%s/%s enabled: logging into %s", MODULE_NAME, MODULE_VERSION, conf->log_filename);
 
   resource_checker_initialized = 1;
 
