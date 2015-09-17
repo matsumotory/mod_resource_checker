@@ -1,4 +1,4 @@
-# mod_resource_checker
+# mod_resource_checker [![Build Status](https://travis-ci.org/matsumoto-r/mod_resource_checker.svg?branch=master)](https://travis-ci.org/matsumoto-r/mod_resource_checker)
 
 Process Resource Logging Module using JSON format into file or piped program.
 
