@@ -38,7 +38,7 @@ env:
     APR_TAR=${APR}.tar.gz 
     APR_UTIL_TAR=${APR_UTIL}.tar.gz 
     APXS_CHECK_CMD="../${HTTPD_VERSION}/apache/bin/apachectl -v"
-    VHOST_CONF="test/mod_resource_checker.conf"
+    VHOST_CONF="test/mod_resource_checker.conf.2.4"
   # for apache2.4.x with worker
   - HTTPD_VERSION=httpd-2.4.16 
     HTTPD_CONFIG_OPT="--with-mpm=worker"
@@ -48,7 +48,7 @@ env:
     APR_TAR=${APR}.tar.gz 
     APR_UTIL_TAR=${APR_UTIL}.tar.gz 
     APXS_CHECK_CMD="../${HTTPD_VERSION}/apache/bin/apachectl -v"
-    VHOST_CONF="test/mod_resource_checker.conf"
+    VHOST_CONF="test/mod_resource_checker.conf.2.4"
   # for apache2.4.x with prefork
   - HTTPD_VERSION=httpd-2.4.16 
     HTTPD_CONFIG_OPT="--with-mpm=prefork"
@@ -58,7 +58,7 @@ env:
     APR_TAR=${APR}.tar.gz 
     APR_UTIL_TAR=${APR_UTIL}.tar.gz 
     APXS_CHECK_CMD="../${HTTPD_VERSION}/apache/bin/apachectl -v"
-    VHOST_CONF="test/mod_resource_checker.conf"
+    VHOST_CONF="test/mod_resource_checker.conf.2.4.prefork"
 before_script:
   - cd ../
   - wget http://ftp.jaist.ac.jp/pub/apache//httpd/${HTTPD_TAR}
