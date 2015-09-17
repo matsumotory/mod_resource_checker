@@ -221,7 +221,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
   if (pDirConf->json_fmt == ON) {
     json_object *log_obj;
     log_obj = json_object_new_object();
-    json_object_object_add(log_obj, "msg", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
+    json_object_object_add(log_obj, "module", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
     json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
     json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
     json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
@@ -873,17 +873,17 @@ static int after_resource_checker(request_rec *r)
 
   if (pDirConf->cpu_utime > INITIAL_VALUE && pAnalysisResouceNow->cpu_utime >= pDirConf->cpu_utime) {
     _mod_resource_checker_logging(r, pAnalysisResouceNow->cpu_utime, pDirConf->cpu_utime, pDirConf->utime_process_type,
-                                  pDirConf, pAccessInfoData, "RESOURCE_CHECKER", "RCheckUCPU", "sec", r->pool);
+                                  pDirConf, pAccessInfoData, MODULE_NAME, "RCheckUCPU", "sec", r->pool);
   }
 
   if (pDirConf->cpu_stime > INITIAL_VALUE && pAnalysisResouceNow->cpu_stime >= pDirConf->cpu_stime) {
     _mod_resource_checker_logging(r, pAnalysisResouceNow->cpu_stime, pDirConf->cpu_stime, pDirConf->stime_process_type,
-                                  pDirConf, pAccessInfoData, "RESOURCE_CHECKER", "RCheckSCPU", "sec", r->pool);
+                                  pDirConf, pAccessInfoData, MODULE_NAME, "RCheckSCPU", "sec", r->pool);
   }
 
   if (pDirConf->shared_mem > INITIAL_VALUE && pAnalysisResouceNow->shared_mem >= pDirConf->shared_mem) {
     _mod_resource_checker_logging(r, pAnalysisResouceNow->shared_mem, pDirConf->shared_mem, pDirConf->mem_process_type,
-                                  pDirConf, pAccessInfoData, "RESOURCE_CHECKER", "RCheckMEM", "MB", r->pool);
+                                  pDirConf, pAccessInfoData, MODULE_NAME, "RCheckMEM", "MiB", r->pool);
   }
 
 #ifdef __MOD_DEBUG__
