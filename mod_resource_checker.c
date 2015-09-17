@@ -368,7 +368,7 @@ static void *resource_checker_create_dir_config(pool *p, char *d)
   pDirConf->cpu_utime = INITIAL_VALUE;
   pDirConf->cpu_stime = INITIAL_VALUE;
   pDirConf->shared_mem = INITIAL_VALUE;
-  pDirConf->json_fmt = OFF;
+  pDirConf->json_fmt = ON;
   pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));
   ;
 

@@ -37,12 +37,6 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 ### Directive Config
 - Output Format
 
-If you want JSON Format
-
-```
-RCheckJSONFormat On
-```
-
 ```json
 {
   "module": "mod_request_checker",
@@ -64,7 +58,11 @@ RCheckJSONFormat On
 }
 ```
 
-or below log format by default if no setting
+or below log format
+
+```apache
+RCheckJSONFormat Off
+```
 
 ```
 [Fri Apr 26 23:11:18 2013] pid=3225 RESOURCE_CHECKER: [ RCheckUCPU(sec) = 0.2969550000 (ALL) > threshold=(0.00001) ] config_dir=(/) src_ip=(192.168.12.1) access_file=(/usr/local/apache244/htdocs/blog/index.php) request=(GET /?p=3414 HTTP/1.0)
@@ -72,17 +70,17 @@ or below log format by default if no setting
 
 - Logging CPUUserTime
 
-```
+```apache
 RCheckUCPU <threashould> <type>
 ```
 
 - Logging CPUSystemTime
-```
+```apache
 RCheckSCPU <threashould> <type>
 ```
 
 - Logging UsedMemory
-```
+```apache
 RCheckMEM <threashould> <type>
 
     <threashould>    digit(non-zero)
@@ -93,14 +91,14 @@ RCheckMEM <threashould> <type>
 ```
 
 - Directory Access Control
-```
+```apache
 <Directory "/var/www/html">
      RCheckUCPU 0.0001 ALL
 </Directory>
 ```
 
 - File Access Control
-```
+```apache
 <Files "ag.cgi">
      RCheckUCPU 0.003 SELF
      RCheckSCPU 0.004 CHILD
@@ -109,7 +107,7 @@ RCheckMEM <threashould> <type>
 ```
 
 - Files Regex Access Control
-```
+```apache
 <FilesMatch ".*\.cgi$">
      RCheckUCPU 0.005 ALL
      RCheckMEM 1 ALL
