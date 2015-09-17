@@ -1,6 +1,6 @@
-# mod_resource_checker.c
+# mod_resource_checker
 
-Process Resource Logging Module
+Process Resource Logging Module.
 
 ##How To Compile
 - Build
