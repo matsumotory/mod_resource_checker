@@ -1,6 +1,27 @@
 # mod_resource_checker
 
-Process Resource Logging Module.
+Process Resource Logging Module using JSON format into file or piped program.
+
+```json
+{
+  "module": "mod_request_checker",
+  "date": "Thu Sep 17 11:48:57 2015",
+  "type": "RCheckMEM",
+  "unit": "MiB",
+  "location": "/path/to/",
+  "remote_ip": "192.168.0.1",
+  "filename": "/path/to/phpinfo.php",
+  "scheme": "http",
+  "method": "GET",
+  "hostname": "test001.example.jp",
+  "uri": "/phpinfo.php",
+  "uid": 929643,
+  "size": 20,
+  "pid": 3220,
+  "threshold": 0.1,
+  "result": 2.597656
+}
+```
 
 ##How To Compile
 - Build
