@@ -66,7 +66,7 @@
 #include <syslog.h>
 #endif
 
-#define MODULE_NAME "mod_request_checker"
+#define MODULE_NAME "mod_resource_checker"
 #define MODULE_VERSION "0.2.1"
 #define ON 1
 #define OFF 0
