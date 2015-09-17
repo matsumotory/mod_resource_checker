@@ -309,7 +309,8 @@ static void resource_checker_init(server_rec *server, pool *p)
     }
   }
 
-  ap_log_perror(APLOG_MARK, APLOG_NOTICE, 0, p, "%s/%s enabled: logging into %s", MODULE_NAME, MODULE_VERSION, conf->log_filename);
+  ap_log_perror(APLOG_MARK, APLOG_NOTICE, 0, p, "%s/%s enabled: logging into %s", MODULE_NAME, MODULE_VERSION,
+                conf->log_filename);
 
   resource_checker_initialized = 1;
 
@@ -896,9 +897,12 @@ static int after_resource_checker(request_rec *r)
 /* --- Command_rec --- */
 /* ------------------- */
 static const command_rec resource_checker_cmds[] = {
-    AP_INIT_TAKE2("RCheckUCPU", (void *)set_cpu_utime_resouce, NULL, RSRC_CONF | ACCESS_CONF, "Set Resource Checker User CPU Time."),
-    AP_INIT_TAKE2("RCheckSCPU", (void *)set_cpu_stime_resouce, NULL, RSRC_CONF | ACCESS_CONF, "Set Resource Checker System CPU Time."),
-    AP_INIT_TAKE2("RCheckMEM", (void *)set_shared_mem_resouce, NULL, RSRC_CONF | ACCESS_CONF, "Set Resource Checker Process Memory."),
+    AP_INIT_TAKE2("RCheckUCPU", (void *)set_cpu_utime_resouce, NULL, RSRC_CONF | ACCESS_CONF,
+                  "Set Resource Checker User CPU Time."),
+    AP_INIT_TAKE2("RCheckSCPU", (void *)set_cpu_stime_resouce, NULL, RSRC_CONF | ACCESS_CONF,
+                  "Set Resource Checker System CPU Time."),
+    AP_INIT_TAKE2("RCheckMEM", (void *)set_shared_mem_resouce, NULL, RSRC_CONF | ACCESS_CONF,
+                  "Set Resource Checker Process Memory."),
     AP_INIT_FLAG("RCheckJSONFormat", set_json_fmt_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output by JSON Format."),
     AP_INIT_TAKE1("RCheckLogPath", set_rcheck_logname, NULL, RSRC_CONF | ACCESS_CONF, "RCheck log name."),
     {NULL}};
