@@ -20,6 +20,7 @@ tail -n 1 /path/to/resource.log | jq .
   "hostname": "test001.example.jp",
   "uri": "/phpinfo.php",
   "uid": 929643,
+  "status": 200,
   "size": 20,
   "pid": 3220,
   "threshold": 0.1,
@@ -77,6 +78,7 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
   "uri": "/phpinfo.php",
   "uid": 929643,
   "size": 20,
+  "status": 200,
   "pid": 3220,
   "threshold": 0.1,
   "result": 2.597656
