@@ -47,5 +47,6 @@ test:
 	grep "RCheckUCPU" /tmp/resource.log
 	grep "RCheckSCPU" /tmp/resource.log
 	grep "RCheckMEM" /tmp/resource.log
+	grep "RCheckSTATUS" /tmp/resource.log
 
 .PHONY: test
