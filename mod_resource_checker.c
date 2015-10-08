@@ -67,7 +67,7 @@
 #endif
 
 #define MODULE_NAME "mod_resource_checker"
-#define MODULE_VERSION "0.3.1"
+#define MODULE_VERSION "0.4.1"
 #define ON 1
 #define OFF 0
 
