@@ -180,6 +180,11 @@ void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, pool *p)
 /* ------------------------------------------- */
 /* --- Request Transaction Logging Routine --- */
 /* ------------------------------------------- */
+static double resource_checker_response_time(request_rec *r)
+{
+    apr_time_t duration = apr_time_now() - r->request_time;
+    return (double)apr_time_sec(duration);
+}
 
 static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
 {
@@ -241,6 +246,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     json_object_object_add(log_obj, "status", json_object_new_int(r->status));
     json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
     json_object_object_add(log_obj, "threshold", json_object_new_double(threshold));
+    json_object_object_add(log_obj, "response_time", json_object_new_double(resource_checker_response_time(r)));
     json_object_object_add(log_obj, "result", json_object_new_double(resource_time));
 
     mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
