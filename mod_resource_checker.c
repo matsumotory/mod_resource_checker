@@ -112,6 +112,7 @@ typedef struct resource_checker_dir_conf {
   char *mem_process_type;
   char *target_dir;
   int json_fmt;
+  int check_status;
   RESOURCE_DATA *pAnalysisResouceBefore;
 
 } RESOURCE_CHECKER_D_CONF;
@@ -371,6 +372,7 @@ static void *resource_checker_create_dir_config(pool *p, char *d)
   pDirConf->cpu_stime = INITIAL_VALUE;
   pDirConf->shared_mem = INITIAL_VALUE;
   pDirConf->json_fmt = ON;
+  pDirConf->check_status = OFF;
   pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));
   ;
 
@@ -508,6 +510,13 @@ static const char *set_json_fmt_resource(cmd_parms *cmd, void *dir_config_fmt, i
 {
   RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
   pDirConf->json_fmt = enable;
+  return NULL;
+}
+
+static const char *set_status_resource(cmd_parms *cmd, void *dir_config_fmt, int enable)
+{
+  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  pDirConf->check_status = enable;
   return NULL;
 }
 
@@ -736,14 +745,8 @@ static int after_resource_checker(request_rec *r)
   RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
 
   if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE &&
-      pDirConf->shared_mem == INITIAL_VALUE)
+      pDirConf->shared_mem == INITIAL_VALUE && pDirConf->check_status == OFF)
     return DECLINED;
-
-  if (pAnalysisResouceBefore == NULL) {
-    ap_log_rerror(APLOG_MARK, APLOG_NOTICE, 0, r, "%s NOTICE %s: Can not check resource of the request: file = %s",
-                  MODULE_NAME, __func__, r->filename);
-    return DECLINED;
-  }
 
   int match;
   struct stat sb;
@@ -792,7 +795,18 @@ static int after_resource_checker(request_rec *r)
   RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
 #endif
 
+  if (pDirConf->check_status == ON) {
+    _mod_resource_checker_logging(r, 0, 0, NULL, pDirConf, pAccessInfoData, MODULE_NAME, "RCheckSTATUS", NULL, r->pool);
+  }
+
   // threashould check
+
+  if (pAnalysisResouceBefore == NULL) {
+    ap_log_rerror(APLOG_MARK, APLOG_NOTICE, 0, r, "%s NOTICE %s: Can not check resource of the request: file = %s",
+                  MODULE_NAME, __func__, r->filename);
+    return DECLINED;
+  }
+
 
   match = 0;
   pAnalysisResouceAfter->cpu_utime = INITIAL_VALUE;
@@ -905,6 +919,7 @@ static const command_rec resource_checker_cmds[] = {
     AP_INIT_TAKE2("RCheckMEM", (void *)set_shared_mem_resouce, NULL, RSRC_CONF | ACCESS_CONF,
                   "Set Resource Checker Process Memory."),
     AP_INIT_FLAG("RCheckJSONFormat", set_json_fmt_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output by JSON Format."),
+    AP_INIT_FLAG("RCheckSTATUS", set_status_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output STATUS log only."),
     AP_INIT_TAKE1("RCheckLogPath", set_rcheck_logname, NULL, RSRC_CONF | ACCESS_CONF, "RCheck log name."),
     {NULL}};
 
