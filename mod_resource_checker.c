@@ -183,8 +183,8 @@ void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, pool *p)
 /* ------------------------------------------- */
 static double resource_checker_response_time(request_rec *r)
 {
-    apr_time_t duration = apr_time_now() - r->request_time;
-    return (double)apr_time_sec(duration);
+  apr_time_t duration = apr_time_now() - r->request_time;
+  return (double)apr_time_sec(duration);
 }
 
 static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
@@ -199,7 +199,8 @@ static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
   return str;
 }
 
-static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *data, RESOURCE_CHECKER_D_CONF *conf, ACCESS_INFO *info, apr_pool_t *p)
+static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *data, RESOURCE_CHECKER_D_CONF *conf,
+                                              ACCESS_INFO *info, apr_pool_t *p)
 {
   int len;
   time_t t;
@@ -219,12 +220,10 @@ static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *dat
   json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
   json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, "RCheckALL")));
   json_object_object_add(log_obj, "unit", NULL);
-  json_object_object_add(log_obj, "location",
-                         json_object_new_string(ap_mrb_string_check(r->pool, conf->target_dir)));
+  json_object_object_add(log_obj, "location", json_object_new_string(ap_mrb_string_check(r->pool, conf->target_dir)));
   json_object_object_add(log_obj, "remote_ip",
                          json_object_new_string(ap_mrb_string_check(r->pool, info->access_src_ip)));
-  json_object_object_add(log_obj, "filename",
-                         json_object_new_string(ap_mrb_string_check(r->pool, info->access_file)));
+  json_object_object_add(log_obj, "filename", json_object_new_string(ap_mrb_string_check(r->pool, info->access_file)));
   json_object_object_add(log_obj, "scheme", json_object_new_string(ap_mrb_string_check(r->pool, ap_http_scheme(r))));
   json_object_object_add(log_obj, "method", json_object_new_string(ap_mrb_string_check(r->pool, r->method)));
   json_object_object_add(log_obj, "hostname", json_object_new_string(ap_mrb_string_check(r->pool, r->hostname)));
@@ -879,7 +878,6 @@ static int after_resource_checker(request_rec *r)
     return DECLINED;
   }
 
-
   match = 0;
   pAnalysisResouceAfter->cpu_utime = INITIAL_VALUE;
   pAnalysisResouceAfter->cpu_stime = INITIAL_VALUE;
@@ -985,7 +983,6 @@ static int after_resource_checker(request_rec *r)
   if (pDirConf->check_all == ON && pDirConf->json_fmt == ON) {
     _mod_resource_checker_logging_all(r, pAnalysisResouceNow, pDirConf, pAccessInfoData, r->pool);
   }
-
 
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "end", r->pool);
