@@ -768,7 +768,7 @@ static int before_resource_checker(request_rec *r)
   if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+      pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
     else
       pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
@@ -776,7 +776,7 @@ static int before_resource_checker(request_rec *r)
   if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+      pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, "ALL", "shared_mem");
     else
       pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
@@ -891,7 +891,7 @@ static int after_resource_checker(request_rec *r)
   if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+      pAnalysisResouceAfter->cpu_stime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
     else
       pAnalysisResouceAfter->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
@@ -899,7 +899,7 @@ static int after_resource_checker(request_rec *r)
   if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+      pAnalysisResouceAfter->shared_mem = _get_rusage_resource(r->pool, "ALL", "shared_mem");
     else
       pAnalysisResouceAfter->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
