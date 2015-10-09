@@ -9,28 +9,28 @@ tail -n 1 /path/to/resource.log | jq .
 ```json
 {
   "result": {
-    "RCheckMEM": 39.5625,
-    "RCheckSCPU": 0.071989,
-    "RCheckUCPU": 0.630904
+    "RCheckMEM": 17.765625,
+    "RCheckSCPU": 0.086986,
+    "RCheckUCPU": 0.826874
   },
-  "response_time": 0,
+  "response_time": 1,
   "threshold": null,
   "scheme": "http",
-  "filename": "/usr/local/apache244/htdocs/blog/index.php",
-  "remote_ip": "127.0.0.1",
+  "filename": "/usr/local/apache244/htdocs/blog/wp-content/themes/wp.vicuna.exc/style.php",
+  "remote_ip": "119.170.71.29",
   "location": "/",
   "unit": null,
   "type": "RCheckALL",
-  "date": "Fri Oct 09 17:16:33 2015",
+  "date": "Fri Oct 09 17:19:07 2015",
   "module": "mod_resource_checker",
   "method": "GET",
-  "hostname": "blog_backend",
-  "uri": "/index.php",
+  "hostname": "blog.matsumoto-r.jp",
+  "uri": "/wp-content/themes/wp.vicuna.exc/style.php",
   "uid": 2,
-  "size": 418,
-  "content_length": 0,
-  "status": 301,
-  "pid": 31295
+  "size": 405,
+  "content_length": 55,
+  "status": 200,
+  "pid": 31310
 }
 ```
 
