@@ -763,17 +763,26 @@ static int before_resource_checker(request_rec *r)
 
   if (pDirConf->cpu_utime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_utime");
+    else
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
   }
 
   if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+    else
+      pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
 
   if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+    else
+      pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
 
   if (match == 0) {
@@ -878,17 +887,26 @@ static int after_resource_checker(request_rec *r)
 
   if (pDirConf->cpu_utime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_utime");
+    else
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
   }
 
   if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceAfter->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+    else
+      pAnalysisResouceAfter->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
 
   if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceAfter->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+    else
+      pAnalysisResouceAfter->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
 
   if (match == 0) {
