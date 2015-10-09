@@ -33,6 +33,7 @@
 #include "ap_config.h"
 #include "http_log.h"
 #include "apr_strings.h"
+#include "util_time.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -201,16 +202,11 @@ static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
 
 static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *data, RESOURCE_CHECKER_D_CONF *conf, ACCESS_INFO *info, apr_pool_t *p)
 {
-  int len;
-  time_t t;
-  char *log_time;
+  char log_time[APR_CTIME_LEN];
   char *mod_resource_checker_log_buf;
   json_object *log_obj, *result_obj;
 
-  time(&t);
-  log_time = (char *)ctime(&t);
-  len = strlen(log_time);
-  log_time[len - 1] = '\0';
+  ap_recent_ctime(log_time, r->request_time);
 
   log_obj = json_object_new_object();
   result_obj = json_object_new_object();
@@ -259,19 +255,14 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
                                               const char *unit, apr_pool_t *p)
 #endif
 {
-  int len;
-  time_t t;
-  char *log_time;
+  char log_time[APR_CTIME_LEN];
+  char *mod_resource_checker_log_buf;
 
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "start", p);
 #endif
 
-  time(&t);
-  log_time = (char *)ctime(&t);
-  len = strlen(log_time);
-  log_time[len - 1] = '\0';
-  char *mod_resource_checker_log_buf;
+  ap_recent_ctime(log_time, r->request_time);
 
   if (pDirConf->json_fmt == ON) {
     json_object *log_obj;
