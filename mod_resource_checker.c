@@ -241,6 +241,9 @@ static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *dat
 
   apr_file_puts(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
   apr_file_flush(mod_resource_checker_log_fp);
+
+  json_object_put(result_obj);
+  json_object_put(log_obj);
 }
 
 #ifdef __MOD_APACHE1__
@@ -257,6 +260,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
 {
   char log_time[APR_CTIME_LEN];
   char *mod_resource_checker_log_buf;
+  json_object *log_obj = NULL;
 
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "start", p);
@@ -265,7 +269,6 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
   ap_recent_ctime(log_time, r->request_time);
 
   if (pDirConf->json_fmt == ON) {
-    json_object *log_obj;
     log_obj = json_object_new_object();
     json_object_object_add(log_obj, "module", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
     json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
@@ -316,6 +319,9 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
   apr_file_puts(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
   apr_file_flush(mod_resource_checker_log_fp);
 #endif
+
+  if (log_obj != NULL)
+    json_object_put(log_obj);
 
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "end", p);
