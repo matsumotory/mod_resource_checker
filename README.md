@@ -9,29 +9,29 @@ tail -n 1 /path/to/resource.log | jq .
 ```json
 {
   "result": {
-    "RCheckMEM": 20.027344,
-    "RCheckSCPU": 0.054992,
-    "RCheckUCPU": 1.129829
+    "RCheckMEM": 39.5625,
+    "RCheckSCPU": 0.071989,
+    "RCheckUCPU": 0.630904
   },
-  "response_time": 1,
+  "response_time": 0,
+  "threshold": null,
   "scheme": "http",
   "filename": "/usr/local/apache244/htdocs/blog/index.php",
   "remote_ip": "127.0.0.1",
   "location": "/",
   "unit": null,
   "type": "RCheckALL",
-  "date": "Fri Oct 09 17:05:30 2015",
+  "date": "Fri Oct 09 17:16:33 2015",
   "module": "mod_resource_checker",
   "method": "GET",
   "hostname": "blog_backend",
   "uri": "/index.php",
   "uid": 2,
   "size": 418,
-  "status": 200,
-  "pid": 30989,
-  "threshold": null
+  "content_length": 0,
+  "status": 301,
+  "pid": 31295
 }
-
 ```
 
 ##How To Compile
@@ -101,27 +101,28 @@ RCheckALL On
 ```json
 {
   "result": {
-    "RCheckMEM": 20.027344,
-    "RCheckSCPU": 0.054992,
-    "RCheckUCPU": 1.129829
+    "RCheckMEM": 39.5625,
+    "RCheckSCPU": 0.071989,
+    "RCheckUCPU": 0.630904
   },
-  "response_time": 1,
+  "response_time": 0,
+  "threshold": null,
   "scheme": "http",
   "filename": "/usr/local/apache244/htdocs/blog/index.php",
   "remote_ip": "127.0.0.1",
   "location": "/",
   "unit": null,
   "type": "RCheckALL",
-  "date": "Fri Oct 09 17:05:30 2015",
+  "date": "Fri Oct 09 17:16:33 2015",
   "module": "mod_resource_checker",
   "method": "GET",
   "hostname": "blog_backend",
   "uri": "/index.php",
   "uid": 2,
   "size": 418,
-  "status": 200,
-  "pid": 30989,
-  "threshold": null
+  "content_length": 0,
+  "status": 301,
+  "pid": 31295
 }
 ```
 
