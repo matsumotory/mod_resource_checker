@@ -10,4 +10,5 @@ RCheckLogPath /tmp/resource.log
     RCheckUCPU 0.00001 ALL
     RCheckMEM  0.001 ALL
     RCheckSTATUS On
+    RCheckALL On
 </VirtualHost>
