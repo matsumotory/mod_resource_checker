@@ -49,10 +49,10 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
     ```
     RCheckLogPath "/usr/local/apache/logs/resoruce.log"
     ```
-      
+
     or
 
-- if enable JSON Format `RCheckJSONFormat On`, for exmaple, 
+- if enable JSON Format `RCheckJSONFormat On`, for exmaple,
 
     ```
     RCheckLogPath "| mongoimport -d apache -c resource_check"
@@ -87,14 +87,66 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 }
 ```
 
-or below log format
+- Logging all status and resources log
 
 ```apache
-RCheckJSONFormat Off
+RCheckALL On
 ```
 
+```json
+{
+  "result": {
+    "RCheckMEM": 0,
+    "RCheckSCPU": 0,
+    "RCheckUCPU": 0.351562
+  },
+  "response_time": 0,
+  "scheme": "http",
+  "filename": "/var/www/html/index.html",
+  "remote_ip": "127.0.0.1",
+  "location": "/",
+  "unit": null,
+  "type": "RCheckALL",
+  "date": "Fri Oct  9 14:08:56 2015",
+  "module": "mod_resource_checker",
+  "method": "GET",
+  "hostname": "127.0.0.1",
+  "uri": "/index.html",
+  "uid": 0,
+  "size": 7,
+  "status": 200,
+  "pid": 15184,
+  "threshold": null
+}
 ```
-[Fri Apr 26 23:11:18 2013] pid=3225 RESOURCE_CHECKER: [ RCheckUCPU(sec) = 0.2969550000 (ALL) > threshold=(0.00001) ] config_dir=(/) src_ip=(192.168.12.1) access_file=(/usr/local/apache244/htdocs/blog/index.php) request=(GET /?p=3414 HTTP/1.0)
+
+- Logging all request which don't include resouces data
+
+```apache
+RCheckSTATUS On
+```
+
+```json
+{
+  "result": 0,
+  "response_time": 0,
+  "scheme": "http",
+  "filename": "/var/www/html/index.html",
+  "remote_ip": "127.0.0.1",
+  "location": "/",
+  "unit": "null",
+  "type": "RCheckSTATUS",
+  "date": "Fri Oct 09 15:43:26 2015",
+  "module": "mod_resource_checker",
+  "method": "GET",
+  "hostname": "127.0.0.1",
+  "uri": "/index.html",
+  "uid": 0,
+  "size": 7,
+  "status": 200,
+  "pid": 20572,
+  "threshold": 0
+}
 ```
 
 - Logging CPUUserTime

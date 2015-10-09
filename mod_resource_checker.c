@@ -33,6 +33,7 @@
 #include "ap_config.h"
 #include "http_log.h"
 #include "apr_strings.h"
+#include "util_time.h"
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -113,6 +114,7 @@ typedef struct resource_checker_dir_conf {
   char *target_dir;
   int json_fmt;
   int check_status;
+  int check_all;
   RESOURCE_DATA *pAnalysisResouceBefore;
 
 } RESOURCE_CHECKER_D_CONF;
@@ -182,8 +184,8 @@ void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, pool *p)
 /* ------------------------------------------- */
 static double resource_checker_response_time(request_rec *r)
 {
-    apr_time_t duration = apr_time_now() - r->request_time;
-    return (double)apr_time_sec(duration);
+  apr_time_t duration = apr_time_now() - r->request_time;
+  return (double)apr_time_sec(duration);
 }
 
 static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
@@ -198,6 +200,51 @@ static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
   return str;
 }
 
+static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *data, RESOURCE_CHECKER_D_CONF *conf,
+                                              ACCESS_INFO *info, apr_pool_t *p)
+{
+  char log_time[APR_CTIME_LEN];
+  char *mod_resource_checker_log_buf;
+  json_object *log_obj, *result_obj;
+
+  ap_recent_ctime(log_time, r->request_time);
+
+  log_obj = json_object_new_object();
+  result_obj = json_object_new_object();
+
+  json_object_object_add(log_obj, "module", json_object_new_string(ap_mrb_string_check(r->pool, MODULE_NAME)));
+  json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
+  json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, "RCheckALL")));
+  json_object_object_add(log_obj, "unit", NULL);
+  json_object_object_add(log_obj, "location", json_object_new_string(ap_mrb_string_check(r->pool, conf->target_dir)));
+  json_object_object_add(log_obj, "remote_ip",
+                         json_object_new_string(ap_mrb_string_check(r->pool, info->access_src_ip)));
+  json_object_object_add(log_obj, "filename", json_object_new_string(ap_mrb_string_check(r->pool, info->access_file)));
+  json_object_object_add(log_obj, "scheme", json_object_new_string(ap_mrb_string_check(r->pool, ap_http_scheme(r))));
+  json_object_object_add(log_obj, "method", json_object_new_string(ap_mrb_string_check(r->pool, r->method)));
+  json_object_object_add(log_obj, "hostname", json_object_new_string(ap_mrb_string_check(r->pool, r->hostname)));
+  json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
+  json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
+  json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
+  json_object_object_add(log_obj, "status", json_object_new_int(r->status));
+  json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
+  json_object_object_add(log_obj, "threshold", NULL);
+  json_object_object_add(log_obj, "response_time", json_object_new_double(resource_checker_response_time(r)));
+
+  json_object_object_add(result_obj, "RCheckUCPU", json_object_new_double(data->cpu_utime));
+  json_object_object_add(result_obj, "RCheckSCPU", json_object_new_double(data->cpu_stime));
+  json_object_object_add(result_obj, "RCheckMEM", json_object_new_double(data->shared_mem));
+  json_object_object_add(log_obj, "result", result_obj);
+
+  mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
+
+  apr_file_puts(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
+  apr_file_flush(mod_resource_checker_log_fp);
+
+  json_object_put(result_obj);
+  json_object_put(log_obj);
+}
+
 #ifdef __MOD_APACHE1__
 static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type,
                                           RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData,
@@ -210,22 +257,17 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
                                               const char *unit, apr_pool_t *p)
 #endif
 {
-  int len;
-  time_t t;
-  char *log_time;
+  char log_time[APR_CTIME_LEN];
+  char *mod_resource_checker_log_buf;
+  json_object *log_obj = NULL;
 
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "start", p);
 #endif
 
-  time(&t);
-  log_time = (char *)ctime(&t);
-  len = strlen(log_time);
-  log_time[len - 1] = '\0';
-  char *mod_resource_checker_log_buf;
+  ap_recent_ctime(log_time, r->request_time);
 
   if (pDirConf->json_fmt == ON) {
-    json_object *log_obj;
     log_obj = json_object_new_object();
     json_object_object_add(log_obj, "module", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
     json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
@@ -276,6 +318,9 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
   apr_file_puts(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
   apr_file_flush(mod_resource_checker_log_fp);
 #endif
+
+  if (log_obj != NULL)
+    json_object_put(log_obj);
 
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "end", p);
@@ -379,6 +424,7 @@ static void *resource_checker_create_dir_config(pool *p, char *d)
   pDirConf->shared_mem = INITIAL_VALUE;
   pDirConf->json_fmt = ON;
   pDirConf->check_status = OFF;
+  pDirConf->check_all = OFF;
   pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));
   ;
 
@@ -526,6 +572,13 @@ static const char *set_status_resource(cmd_parms *cmd, void *dir_config_fmt, int
   return NULL;
 }
 
+static const char *set_all_resource(cmd_parms *cmd, void *dir_config_fmt, int enable)
+{
+  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  pDirConf->check_all = enable;
+  return NULL;
+}
+
 static const char *set_rcheck_logname(cmd_parms *cmd, void *dir_config_fmt, const char *log_filename)
 {
   RESOURCE_CHECKER_CONF *conf = ap_get_module_config(cmd->server->module_config, &resource_checker_module);
@@ -665,7 +718,7 @@ static int before_resource_checker(request_rec *r)
   RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
 
   if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE &&
-      pDirConf->shared_mem == INITIAL_VALUE)
+      pDirConf->shared_mem == INITIAL_VALUE && pDirConf->check_all == OFF)
     return DECLINED;
 
   int match;
@@ -704,19 +757,28 @@ static int before_resource_checker(request_rec *r)
   pAnalysisResouceBefore->cpu_stime = INITIAL_VALUE;
   pAnalysisResouceBefore->shared_mem = INITIAL_VALUE;
 
-  if (pDirConf->cpu_utime > INITIAL_VALUE) {
+  if (pDirConf->cpu_utime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_utime");
+    else
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
   }
 
-  if (pDirConf->cpu_stime > INITIAL_VALUE) {
+  if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+    else
+      pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
 
-  if (pDirConf->shared_mem > INITIAL_VALUE) {
+  if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+    else
+      pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
 
   if (match == 0) {
@@ -751,7 +813,7 @@ static int after_resource_checker(request_rec *r)
   RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
 
   if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE &&
-      pDirConf->shared_mem == INITIAL_VALUE && pDirConf->check_status == OFF)
+      pDirConf->shared_mem == INITIAL_VALUE && pDirConf->check_status == OFF && pDirConf->check_all == OFF)
     return DECLINED;
 
   int match;
@@ -813,25 +875,33 @@ static int after_resource_checker(request_rec *r)
     return DECLINED;
   }
 
-
   match = 0;
   pAnalysisResouceAfter->cpu_utime = INITIAL_VALUE;
   pAnalysisResouceAfter->cpu_stime = INITIAL_VALUE;
   pAnalysisResouceAfter->shared_mem = INITIAL_VALUE;
 
-  if (pDirConf->cpu_utime > INITIAL_VALUE) {
+  if (pDirConf->cpu_utime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_utime");
+    else
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
   }
 
-  if (pDirConf->cpu_stime > INITIAL_VALUE) {
+  if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceAfter->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+    else
+      pAnalysisResouceAfter->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
 
-  if (pDirConf->shared_mem > INITIAL_VALUE) {
+  if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
-    pAnalysisResouceAfter->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
+    if (pDirConf->check_all == ON)
+      pAnalysisResouceAfter->cpu_utime = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+    else
+      pAnalysisResouceAfter->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
 
   if (match == 0) {
@@ -907,6 +977,10 @@ static int after_resource_checker(request_rec *r)
                                   pDirConf, pAccessInfoData, MODULE_NAME, "RCheckMEM", "MiB", r->pool);
   }
 
+  if (pDirConf->check_all == ON && pDirConf->json_fmt == ON) {
+    _mod_resource_checker_logging_all(r, pAnalysisResouceNow, pDirConf, pAccessInfoData, r->pool);
+  }
+
 #ifdef __MOD_DEBUG__
   RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "end", r->pool);
 #endif
@@ -926,6 +1000,7 @@ static const command_rec resource_checker_cmds[] = {
                   "Set Resource Checker Process Memory."),
     AP_INIT_FLAG("RCheckJSONFormat", set_json_fmt_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output by JSON Format."),
     AP_INIT_FLAG("RCheckSTATUS", set_status_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output STATUS log only."),
+    AP_INIT_FLAG("RCheckALL", set_all_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output all resource log on one line."),
     AP_INIT_TAKE1("RCheckLogPath", set_rcheck_logname, NULL, RSRC_CONF | ACCESS_CONF, "RCheck log name."),
     {NULL}};
 
