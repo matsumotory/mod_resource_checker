@@ -226,6 +226,7 @@ static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *dat
   json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
   json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
   json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
+  json_object_object_add(log_obj, "content_length", json_object_new_int(r->clength));
   json_object_object_add(log_obj, "status", json_object_new_int(r->status));
   json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
   json_object_object_add(log_obj, "threshold", NULL);
@@ -285,6 +286,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
     json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
     json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
+    json_object_object_add(log_obj, "content_length", json_object_new_int(r->clength));
     json_object_object_add(log_obj, "status", json_object_new_int(r->status));
     json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
     json_object_object_add(log_obj, "threshold", json_object_new_double(threshold));
