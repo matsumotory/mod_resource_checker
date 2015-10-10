@@ -126,16 +126,12 @@ static double resource_checker_response_time(request_rec *r)
   return (double)apr_time_sec(duration);
 }
 
-static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
+static json_object *mod_rc_json_object_new_string(const char *str)
 {
-  char *val;
+  if (str == NULL)
+    return NULL;
 
-  if (str == NULL) {
-    val = apr_pstrdup(p, "null");
-    return val;
-  }
-
-  return str;
+  return json_object_new_string(str);
 }
 
 static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *data, mod_rc_dir_conf *conf,
@@ -150,18 +146,17 @@ static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *dat
   log_obj = json_object_new_object();
   result_obj = json_object_new_object();
 
-  json_object_object_add(log_obj, "module", json_object_new_string(ap_mrb_string_check(r->pool, MODULE_NAME)));
-  json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
-  json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, "RCheckALL")));
+  json_object_object_add(log_obj, "module", mod_rc_json_object_new_string(MODULE_NAME));
+  json_object_object_add(log_obj, "date", mod_rc_json_object_new_string(log_time));
+  json_object_object_add(log_obj, "type", mod_rc_json_object_new_string("RCheckALL"));
   json_object_object_add(log_obj, "unit", NULL);
-  json_object_object_add(log_obj, "location", json_object_new_string(ap_mrb_string_check(r->pool, conf->target_dir)));
-  json_object_object_add(log_obj, "remote_ip",
-                         json_object_new_string(ap_mrb_string_check(r->pool, info->access_src_ip)));
-  json_object_object_add(log_obj, "filename", json_object_new_string(ap_mrb_string_check(r->pool, info->access_file)));
-  json_object_object_add(log_obj, "scheme", json_object_new_string(ap_mrb_string_check(r->pool, ap_http_scheme(r))));
-  json_object_object_add(log_obj, "method", json_object_new_string(ap_mrb_string_check(r->pool, r->method)));
-  json_object_object_add(log_obj, "hostname", json_object_new_string(ap_mrb_string_check(r->pool, r->hostname)));
-  json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
+  json_object_object_add(log_obj, "location", mod_rc_json_object_new_string(conf->target_dir));
+  json_object_object_add(log_obj, "remote_ip", mod_rc_json_object_new_string(info->access_src_ip));
+  json_object_object_add(log_obj, "filename", mod_rc_json_object_new_string(info->access_file));
+  json_object_object_add(log_obj, "scheme", mod_rc_json_object_new_string(ap_http_scheme(r)));
+  json_object_object_add(log_obj, "method", mod_rc_json_object_new_string(r->method));
+  json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->hostname));
+  json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->uri));
   json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
   json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
   json_object_object_add(log_obj, "content_length", json_object_new_int(r->clength));
@@ -196,20 +191,20 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
 
   if (dconf->json_fmt == ON) {
     log_obj = json_object_new_object();
-    json_object_object_add(log_obj, "module", json_object_new_string(ap_mrb_string_check(r->pool, msg)));
-    json_object_object_add(log_obj, "date", json_object_new_string(ap_mrb_string_check(r->pool, log_time)));
-    json_object_object_add(log_obj, "type", json_object_new_string(ap_mrb_string_check(r->pool, type)));
-    json_object_object_add(log_obj, "unit", json_object_new_string(ap_mrb_string_check(r->pool, unit)));
+    json_object_object_add(log_obj, "module", mod_rc_json_object_new_string(msg));
+    json_object_object_add(log_obj, "date", mod_rc_json_object_new_string(log_time));
+    json_object_object_add(log_obj, "type", mod_rc_json_object_new_string(type));
+    json_object_object_add(log_obj, "unit", mod_rc_json_object_new_string(unit));
     json_object_object_add(log_obj, "location",
-                           json_object_new_string(ap_mrb_string_check(r->pool, dconf->target_dir)));
+                           mod_rc_json_object_new_string(dconf->target_dir));
     json_object_object_add(log_obj, "remote_ip",
-                           json_object_new_string(ap_mrb_string_check(r->pool, cdata->access_src_ip)));
+                           mod_rc_json_object_new_string(cdata->access_src_ip));
     json_object_object_add(log_obj, "filename",
-                           json_object_new_string(ap_mrb_string_check(r->pool, cdata->access_file)));
-    json_object_object_add(log_obj, "scheme", json_object_new_string(ap_mrb_string_check(r->pool, ap_http_scheme(r))));
-    json_object_object_add(log_obj, "method", json_object_new_string(ap_mrb_string_check(r->pool, r->method)));
-    json_object_object_add(log_obj, "hostname", json_object_new_string(ap_mrb_string_check(r->pool, r->hostname)));
-    json_object_object_add(log_obj, "uri", json_object_new_string(ap_mrb_string_check(r->pool, r->uri)));
+                           mod_rc_json_object_new_string(cdata->access_file));
+    json_object_object_add(log_obj, "scheme", mod_rc_json_object_new_string(ap_http_scheme(r)));
+    json_object_object_add(log_obj, "method", mod_rc_json_object_new_string(r->method));
+    json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->hostname));
+    json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->uri));
     json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
     json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
     json_object_object_add(log_obj, "content_length", json_object_new_int(r->clength));
