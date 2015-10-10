@@ -53,7 +53,6 @@
 #define __APACHE24__
 #endif
 
-
 #define MODULE_NAME "mod_resource_checker"
 #define MODULE_VERSION "0.6.2"
 #define ON 1
@@ -185,10 +184,9 @@ static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *dat
   json_object_put(log_obj);
 }
 
-static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold,
-                                          char *process_type, mod_rc_dir_conf *dconf,
-                                          mod_rc_client_data *cdata, const char *msg, const char *type,
-                                          const char *unit, apr_pool_t *p)
+static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type,
+                                          mod_rc_dir_conf *dconf, mod_rc_client_data *cdata, const char *msg,
+                                          const char *type, const char *unit, apr_pool_t *p)
 {
   char log_time[APR_CTIME_LEN];
   char *mod_resource_checker_log_buf;
@@ -224,9 +222,8 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
   } else {
     mod_resource_checker_log_buf = (char *)apr_psprintf(
-        p,
-        "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s) "
-        "request=(%s)\n",
+        p, "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s) "
+           "request=(%s)\n",
         log_time, getpid(), msg, type, unit, resource_time, process_type, threshold, dconf->target_dir,
         cdata->access_src_ip, cdata->access_file, r->the_request);
   }
@@ -491,12 +488,11 @@ static double _get_rusage_resource(apr_pool_t *p, char *type, char *member)
 /* ----------------------------------------------- */
 static int before_resource_checker(request_rec *r)
 {
-  mod_rc_dir_conf *dconf =
-      (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+  mod_rc_dir_conf *dconf = (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
   mod_rc_rusage *before_resources = dconf->before_resources;
 
-  if (dconf->cpu_utime == INITIAL_VALUE && dconf->cpu_stime == INITIAL_VALUE &&
-      dconf->shared_mem == INITIAL_VALUE && dconf->check_all == OFF)
+  if (dconf->cpu_utime == INITIAL_VALUE && dconf->cpu_stime == INITIAL_VALUE && dconf->shared_mem == INITIAL_VALUE &&
+      dconf->check_all == OFF)
     return DECLINED;
 
   int match;
@@ -551,12 +547,11 @@ static int before_resource_checker(request_rec *r)
 /* ------------------------------------------------- */
 static int after_resource_checker(request_rec *r)
 {
-  mod_rc_dir_conf *dconf =
-      (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+  mod_rc_dir_conf *dconf = (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
   mod_rc_rusage *before_resources = dconf->before_resources;
 
-  if (dconf->cpu_utime == INITIAL_VALUE && dconf->cpu_stime == INITIAL_VALUE &&
-      dconf->shared_mem == INITIAL_VALUE && dconf->check_status == OFF && dconf->check_all == OFF)
+  if (dconf->cpu_utime == INITIAL_VALUE && dconf->cpu_stime == INITIAL_VALUE && dconf->shared_mem == INITIAL_VALUE &&
+      dconf->check_status == OFF && dconf->check_all == OFF)
     return DECLINED;
 
   int match;
@@ -646,18 +641,18 @@ static int after_resource_checker(request_rec *r)
   }
 
   if (dconf->cpu_utime > INITIAL_VALUE && use_resources->cpu_utime >= dconf->cpu_utime) {
-    _mod_resource_checker_logging(r, use_resources->cpu_utime, dconf->cpu_utime, dconf->utime_process_type,
-                                  dconf, cdata, MODULE_NAME, "RCheckUCPU", "sec", r->pool);
+    _mod_resource_checker_logging(r, use_resources->cpu_utime, dconf->cpu_utime, dconf->utime_process_type, dconf,
+                                  cdata, MODULE_NAME, "RCheckUCPU", "sec", r->pool);
   }
 
   if (dconf->cpu_stime > INITIAL_VALUE && use_resources->cpu_stime >= dconf->cpu_stime) {
-    _mod_resource_checker_logging(r, use_resources->cpu_stime, dconf->cpu_stime, dconf->stime_process_type,
-                                  dconf, cdata, MODULE_NAME, "RCheckSCPU", "sec", r->pool);
+    _mod_resource_checker_logging(r, use_resources->cpu_stime, dconf->cpu_stime, dconf->stime_process_type, dconf,
+                                  cdata, MODULE_NAME, "RCheckSCPU", "sec", r->pool);
   }
 
   if (dconf->shared_mem > INITIAL_VALUE && use_resources->shared_mem >= dconf->shared_mem) {
-    _mod_resource_checker_logging(r, use_resources->shared_mem, dconf->shared_mem, dconf->mem_process_type,
-                                  dconf, cdata, MODULE_NAME, "RCheckMEM", "MiB", r->pool);
+    _mod_resource_checker_logging(r, use_resources->shared_mem, dconf->shared_mem, dconf->mem_process_type, dconf,
+                                  cdata, MODULE_NAME, "RCheckMEM", "MiB", r->pool);
   }
 
   if (dconf->check_all == ON && dconf->json_fmt == ON) {
