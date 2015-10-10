@@ -64,15 +64,6 @@
 /* ------------------------ */
 #define INITIAL_VALUE 0
 #define RESOURCE_CHECKER_DEFAULT_LOG_FILE "/tmp/mod_resource_checker.log"
-#define ap_palloc apr_palloc
-#define ap_pcalloc apr_pcalloc
-#define ap_psprintf apr_psprintf
-#define ap_pstrcat apr_pstrcat
-#define ap_pstrdup apr_pstrdup
-#define ap_pstrndup apr_pstrndup
-#define ap_pvsprintf apr_pvsprintf
-#define ap_snprintf apr_snprintf
-#define ap_vsnprintf apr_vsnprintf
 
 /* ----------------------------------- */
 /* --- Struct and Typed Definition --- */
@@ -234,7 +225,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
 
     mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
   } else {
-    mod_resource_checker_log_buf = (char *)ap_psprintf(
+    mod_resource_checker_log_buf = (char *)apr_psprintf(
         p,
         "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s) "
         "request=(%s)\n",
@@ -292,7 +283,7 @@ static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *pt
 /* ---------------------------- */
 static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)ap_palloc(p, sizeof(RESOURCE_CHECKER_D_CONF));
+  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)apr_palloc(p, sizeof(RESOURCE_CHECKER_D_CONF));
 
   pDirConf->cpu_utime = INITIAL_VALUE;
   pDirConf->cpu_stime = INITIAL_VALUE;
@@ -300,13 +291,13 @@ static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
   pDirConf->json_fmt = ON;
   pDirConf->check_status = OFF;
   pDirConf->check_all = OFF;
-  pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));
+  pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)apr_pcalloc(p, sizeof(RESOURCE_DATA));
   ;
 
   if (dir == NULL) {
-    pDirConf->target_dir = ap_pstrdup(p, "DocumentRoot");
+    pDirConf->target_dir = apr_pstrdup(p, "DocumentRoot");
   } else {
-    pDirConf->target_dir = ap_pstrdup(p, dir);
+    pDirConf->target_dir = apr_pstrdup(p, dir);
   }
 
   return pDirConf;
@@ -337,7 +328,7 @@ static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 
   pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
   pDirConf->cpu_utime = atof(arg1);
-  pDirConf->utime_process_type = ap_pstrdup(cmd->pool, arg2);
+  pDirConf->utime_process_type = apr_pstrdup(cmd->pool, arg2);
 
   return NULL;
 }
@@ -358,7 +349,7 @@ static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 
   pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
   pDirConf->cpu_stime = atof(arg1);
-  pDirConf->stime_process_type = ap_pstrdup(cmd->pool, arg2);
+  pDirConf->stime_process_type = apr_pstrdup(cmd->pool, arg2);
 
   return NULL;
 }
@@ -379,7 +370,7 @@ static const char *set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, 
 
   pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
   pDirConf->shared_mem = atof(arg1);
-  pDirConf->mem_process_type = ap_pstrdup(cmd->pool, arg2);
+  pDirConf->mem_process_type = apr_pstrdup(cmd->pool, arg2);
 
   return NULL;
 }
@@ -430,8 +421,8 @@ static double _get_rusage_resource(apr_pool_t *p, char *type, char *member)
   struct rusage *resources_c;
 
   RESOURCE_DATA *pAnalysisResouce;
-  pAnalysisResouce = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));
-  resources = (struct rusage *)ap_pcalloc(p, sizeof(struct rusage));
+  pAnalysisResouce = (RESOURCE_DATA *)apr_pcalloc(p, sizeof(RESOURCE_DATA));
+  resources = (struct rusage *)apr_pcalloc(p, sizeof(struct rusage));
 
   if (strcmp(type, "SELF") == 0) {
     if (getrusage(RUSAGE_SELF, resources) == -1) {
@@ -452,8 +443,8 @@ static double _get_rusage_resource(apr_pool_t *p, char *type, char *member)
       return -1;
     }
   } else if (strcmp(type, "ALL") == 0) {
-    resources_s = (struct rusage *)ap_pcalloc(p, sizeof(struct rusage));
-    resources_c = (struct rusage *)ap_pcalloc(p, sizeof(struct rusage));
+    resources_s = (struct rusage *)apr_pcalloc(p, sizeof(struct rusage));
+    resources_c = (struct rusage *)apr_pcalloc(p, sizeof(struct rusage));
     if (getrusage(RUSAGE_SELF, resources_s) == -1) {
       pAnalysisResouce->cpu_utime = INITIAL_VALUE;
       pAnalysisResouce->cpu_stime = INITIAL_VALUE;
@@ -573,12 +564,12 @@ static int after_resource_checker(request_rec *r)
   int match;
   struct stat sb;
   RESOURCE_DATA *pAnalysisResouceAfter;
-  pAnalysisResouceAfter = (RESOURCE_DATA *)ap_pcalloc(r->pool, sizeof(RESOURCE_DATA));
+  pAnalysisResouceAfter = (RESOURCE_DATA *)apr_pcalloc(r->pool, sizeof(RESOURCE_DATA));
   RESOURCE_DATA *pAnalysisResouceNow;
-  pAnalysisResouceNow = (RESOURCE_DATA *)ap_pcalloc(r->pool, sizeof(RESOURCE_DATA));
+  pAnalysisResouceNow = (RESOURCE_DATA *)apr_pcalloc(r->pool, sizeof(RESOURCE_DATA));
 
   ACCESS_INFO *pAccessInfoData;
-  pAccessInfoData = (ACCESS_INFO *)ap_pcalloc(r->pool, sizeof(ACCESS_INFO));
+  pAccessInfoData = (ACCESS_INFO *)apr_pcalloc(r->pool, sizeof(ACCESS_INFO));
 
   if (resource_checker_initialized == 0) {
     return OK;
