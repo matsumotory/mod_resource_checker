@@ -68,15 +68,15 @@
 /* ----------------------------------- */
 /* --- Struct and Typed Definition --- */
 /* ----------------------------------- */
-typedef struct rusage_resouce_data {
+typedef struct mod_rc_rusage_st {
 
   double cpu_utime;
   double cpu_stime;
   double shared_mem;
 
-} RESOURCE_DATA;
+} mod_rc_rusage;
 
-typedef struct resource_checker_dir_conf {
+typedef struct mod_rc_dir_conf_st {
 
   double cpu_utime;
   double cpu_stime;
@@ -88,29 +88,28 @@ typedef struct resource_checker_dir_conf {
   int json_fmt;
   int check_status;
   int check_all;
-  RESOURCE_DATA *pAnalysisResouceBefore;
+  mod_rc_rusage *before_resources;
 
-} RESOURCE_CHECKER_D_CONF;
+} mod_rc_dir_conf;
 
-typedef struct client_access_data {
+typedef struct mod_rc_client_data_st {
 
   char *access_uri;
   char *access_file;
   char *access_src_ip;
   char *access_dst_host;
 
-} ACCESS_INFO;
+} mod_rc_client_data;
 
-typedef struct resource_checker_conf {
+typedef struct mod_rc_conf_st {
 
   char *log_filename;
 
-} RESOURCE_CHECKER_CONF;
+} mod_rc_conf;
 
 /* ----------------------------------- */
 /* --- Grobal Variables Definition --- */
 /* ----------------------------------- */
-char mod_resource_checker_version[] = "mod_version 0.01";
 int resource_checker_initialized = 0;
 
 apr_file_t *mod_resource_checker_log_fp = NULL;
@@ -141,8 +140,8 @@ static const char *ap_mrb_string_check(apr_pool_t *p, const char *str)
   return str;
 }
 
-static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *data, RESOURCE_CHECKER_D_CONF *conf,
-                                              ACCESS_INFO *info, apr_pool_t *p)
+static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *data, mod_rc_dir_conf *conf,
+                                              mod_rc_client_data *info, apr_pool_t *p)
 {
   char log_time[APR_CTIME_LEN];
   char *mod_resource_checker_log_buf;
@@ -188,8 +187,8 @@ static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *dat
 }
 
 static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold,
-                                          char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf,
-                                          ACCESS_INFO *pAccessInfoData, const char *msg, const char *type,
+                                          char *process_type, mod_rc_dir_conf *pDirConf,
+                                          mod_rc_client_data *pAccessInfoData, const char *msg, const char *type,
                                           const char *unit, apr_pool_t *p)
 {
   char log_time[APR_CTIME_LEN];
@@ -245,7 +244,7 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
 /* ------------------------------------------- */
 static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp, server_rec *server)
 {
-  RESOURCE_CHECKER_CONF *conf = ap_get_module_config(server->module_config, &resource_checker_module);
+  mod_rc_conf *conf = ap_get_module_config(server->module_config, &resource_checker_module);
 
   if (*conf->log_filename == '|') {
     piped_log *pl;
@@ -283,7 +282,7 @@ static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *pt
 /* ---------------------------- */
 static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)apr_palloc(p, sizeof(RESOURCE_CHECKER_D_CONF));
+  mod_rc_dir_conf *pDirConf = (mod_rc_dir_conf *)apr_palloc(p, sizeof(mod_rc_dir_conf));
 
   pDirConf->cpu_utime = INITIAL_VALUE;
   pDirConf->cpu_stime = INITIAL_VALUE;
@@ -291,7 +290,7 @@ static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
   pDirConf->json_fmt = ON;
   pDirConf->check_status = OFF;
   pDirConf->check_all = OFF;
-  pDirConf->pAnalysisResouceBefore = (RESOURCE_DATA *)apr_pcalloc(p, sizeof(RESOURCE_DATA));
+  pDirConf->before_resources = (mod_rc_rusage *)apr_pcalloc(p, sizeof(mod_rc_rusage));
   ;
 
   if (dir == NULL) {
@@ -305,7 +304,7 @@ static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
 
 static void *resource_checker_create_config(apr_pool_t *p, server_rec *s)
 {
-  RESOURCE_CHECKER_CONF *conf = (RESOURCE_CHECKER_CONF *)apr_pcalloc(p, sizeof(*conf));
+  mod_rc_conf *conf = (mod_rc_conf *)apr_pcalloc(p, sizeof(*conf));
 
   conf->log_filename = apr_pstrdup(p, RESOURCE_CHECKER_DEFAULT_LOG_FILE);
 
@@ -317,7 +316,7 @@ static void *resource_checker_create_config(apr_pool_t *p, server_rec *s)
 /* -------------------------------------------------------------------------------- */
 static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *arg2)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf;
+  mod_rc_dir_conf *pDirConf;
 
   if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 &&
       strcmp(arg2, "ALL") == -1)
@@ -326,7 +325,7 @@ static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
   if (atof(arg1) <= 0)
     return "RCheckUCPU: arg1 must be only a number( > 0 )!";
 
-  pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  pDirConf = (mod_rc_dir_conf *)dir_config_fmt;
   pDirConf->cpu_utime = atof(arg1);
   pDirConf->utime_process_type = apr_pstrdup(cmd->pool, arg2);
 
@@ -338,7 +337,7 @@ static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 /* -------------------------------------------------------------------------------- */
 static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *arg2)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf;
+  mod_rc_dir_conf *pDirConf;
 
   if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 &&
       strcmp(arg2, "ALL") == -1)
@@ -347,7 +346,7 @@ static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
   if (atof(arg1) <= 0)
     return "RCheckSCPU: arg1 must be only a number( > 0 )!";
 
-  pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  pDirConf = (mod_rc_dir_conf *)dir_config_fmt;
   pDirConf->cpu_stime = atof(arg1);
   pDirConf->stime_process_type = apr_pstrdup(cmd->pool, arg2);
 
@@ -359,7 +358,7 @@ static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 /* -------------------------------------------------------------------------------- */
 static const char *set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *arg2)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf;
+  mod_rc_dir_conf *pDirConf;
 
   if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 &&
       strcmp(arg2, "ALL") == -1)
@@ -368,7 +367,7 @@ static const char *set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, 
   if (atof(arg1) <= 0)
     return "RCheckMEM: arg1 must be only a number( > 0 )!";
 
-  pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  pDirConf = (mod_rc_dir_conf *)dir_config_fmt;
   pDirConf->shared_mem = atof(arg1);
   pDirConf->mem_process_type = apr_pstrdup(cmd->pool, arg2);
 
@@ -377,28 +376,28 @@ static const char *set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, 
 
 static const char *set_json_fmt_resource(cmd_parms *cmd, void *dir_config_fmt, int enable)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  mod_rc_dir_conf *pDirConf = (mod_rc_dir_conf *)dir_config_fmt;
   pDirConf->json_fmt = enable;
   return NULL;
 }
 
 static const char *set_status_resource(cmd_parms *cmd, void *dir_config_fmt, int enable)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  mod_rc_dir_conf *pDirConf = (mod_rc_dir_conf *)dir_config_fmt;
   pDirConf->check_status = enable;
   return NULL;
 }
 
 static const char *set_all_resource(cmd_parms *cmd, void *dir_config_fmt, int enable)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
+  mod_rc_dir_conf *pDirConf = (mod_rc_dir_conf *)dir_config_fmt;
   pDirConf->check_all = enable;
   return NULL;
 }
 
 static const char *set_rcheck_logname(cmd_parms *cmd, void *dir_config_fmt, const char *log_filename)
 {
-  RESOURCE_CHECKER_CONF *conf = ap_get_module_config(cmd->server->module_config, &resource_checker_module);
+  mod_rc_conf *conf = ap_get_module_config(cmd->server->module_config, &resource_checker_module);
   conf->log_filename = apr_pstrdup(cmd->pool, log_filename);
   return NULL;
 }
@@ -420,8 +419,8 @@ static double _get_rusage_resource(apr_pool_t *p, char *type, char *member)
   struct rusage *resources_s;
   struct rusage *resources_c;
 
-  RESOURCE_DATA *pAnalysisResouce;
-  pAnalysisResouce = (RESOURCE_DATA *)apr_pcalloc(p, sizeof(RESOURCE_DATA));
+  mod_rc_rusage *pAnalysisResouce;
+  pAnalysisResouce = (mod_rc_rusage *)apr_pcalloc(p, sizeof(mod_rc_rusage));
   resources = (struct rusage *)apr_pcalloc(p, sizeof(struct rusage));
 
   if (strcmp(type, "SELF") == 0) {
@@ -493,9 +492,9 @@ static double _get_rusage_resource(apr_pool_t *p, char *type, char *member)
 /* ----------------------------------------------- */
 static int before_resource_checker(request_rec *r)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf =
-      (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
-  RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
+  mod_rc_dir_conf *pDirConf =
+      (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+  mod_rc_rusage *before_resources = pDirConf->before_resources;
 
   if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE &&
       pDirConf->shared_mem == INITIAL_VALUE && pDirConf->check_all == OFF)
@@ -513,32 +512,32 @@ static int before_resource_checker(request_rec *r)
   }
 
   match = 0;
-  pAnalysisResouceBefore->cpu_utime = INITIAL_VALUE;
-  pAnalysisResouceBefore->cpu_stime = INITIAL_VALUE;
-  pAnalysisResouceBefore->shared_mem = INITIAL_VALUE;
+  before_resources->cpu_utime = INITIAL_VALUE;
+  before_resources->cpu_stime = INITIAL_VALUE;
+  before_resources->shared_mem = INITIAL_VALUE;
 
   if (pDirConf->cpu_utime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_utime");
+      before_resources->cpu_utime = _get_rusage_resource(r->pool, "ALL", "cpu_utime");
     else
-      pAnalysisResouceBefore->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
+      before_resources->cpu_utime = _get_rusage_resource(r->pool, pDirConf->utime_process_type, "cpu_utime");
   }
 
   if (pDirConf->cpu_stime > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
+      before_resources->cpu_stime = _get_rusage_resource(r->pool, "ALL", "cpu_stime");
     else
-      pAnalysisResouceBefore->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
+      before_resources->cpu_stime = _get_rusage_resource(r->pool, pDirConf->stime_process_type, "cpu_stime");
   }
 
   if (pDirConf->shared_mem > INITIAL_VALUE || pDirConf->check_all == ON) {
     match = 1;
     if (pDirConf->check_all == ON)
-      pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, "ALL", "shared_mem");
+      before_resources->shared_mem = _get_rusage_resource(r->pool, "ALL", "shared_mem");
     else
-      pAnalysisResouceBefore->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
+      before_resources->shared_mem = _get_rusage_resource(r->pool, pDirConf->mem_process_type, "shared_mem");
   }
 
   if (match == 0) {
@@ -553,9 +552,9 @@ static int before_resource_checker(request_rec *r)
 /* ------------------------------------------------- */
 static int after_resource_checker(request_rec *r)
 {
-  RESOURCE_CHECKER_D_CONF *pDirConf =
-      (RESOURCE_CHECKER_D_CONF *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
-  RESOURCE_DATA *pAnalysisResouceBefore = pDirConf->pAnalysisResouceBefore;
+  mod_rc_dir_conf *pDirConf =
+      (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+  mod_rc_rusage *before_resources = pDirConf->before_resources;
 
   if (pDirConf->cpu_utime == INITIAL_VALUE && pDirConf->cpu_stime == INITIAL_VALUE &&
       pDirConf->shared_mem == INITIAL_VALUE && pDirConf->check_status == OFF && pDirConf->check_all == OFF)
@@ -563,13 +562,13 @@ static int after_resource_checker(request_rec *r)
 
   int match;
   struct stat sb;
-  RESOURCE_DATA *pAnalysisResouceAfter;
-  pAnalysisResouceAfter = (RESOURCE_DATA *)apr_pcalloc(r->pool, sizeof(RESOURCE_DATA));
-  RESOURCE_DATA *pAnalysisResouceNow;
-  pAnalysisResouceNow = (RESOURCE_DATA *)apr_pcalloc(r->pool, sizeof(RESOURCE_DATA));
+  mod_rc_rusage *pAnalysisResouceAfter;
+  pAnalysisResouceAfter = (mod_rc_rusage *)apr_pcalloc(r->pool, sizeof(mod_rc_rusage));
+  mod_rc_rusage *pAnalysisResouceNow;
+  pAnalysisResouceNow = (mod_rc_rusage *)apr_pcalloc(r->pool, sizeof(mod_rc_rusage));
 
-  ACCESS_INFO *pAccessInfoData;
-  pAccessInfoData = (ACCESS_INFO *)apr_pcalloc(r->pool, sizeof(ACCESS_INFO));
+  mod_rc_client_data *pAccessInfoData;
+  pAccessInfoData = (mod_rc_client_data *)apr_pcalloc(r->pool, sizeof(mod_rc_client_data));
 
   if (resource_checker_initialized == 0) {
     return OK;
@@ -593,7 +592,7 @@ static int after_resource_checker(request_rec *r)
   }
 
   // threashould check
-  if (pAnalysisResouceBefore == NULL) {
+  if (before_resources == NULL) {
     ap_log_rerror(APLOG_MARK, APLOG_NOTICE, 0, r, "%s NOTICE %s: Can not check resource of the request: file = %s",
                   MODULE_NAME, __func__, r->filename);
     return DECLINED;
@@ -632,9 +631,9 @@ static int after_resource_checker(request_rec *r)
     return OK;
   }
 
-  pAnalysisResouceNow->cpu_utime = pAnalysisResouceAfter->cpu_utime - pAnalysisResouceBefore->cpu_utime;
-  pAnalysisResouceNow->cpu_stime = pAnalysisResouceAfter->cpu_stime - pAnalysisResouceBefore->cpu_stime;
-  pAnalysisResouceNow->shared_mem = pAnalysisResouceAfter->shared_mem - pAnalysisResouceBefore->shared_mem;
+  pAnalysisResouceNow->cpu_utime = pAnalysisResouceAfter->cpu_utime - before_resources->cpu_utime;
+  pAnalysisResouceNow->cpu_stime = pAnalysisResouceAfter->cpu_stime - before_resources->cpu_stime;
+  pAnalysisResouceNow->shared_mem = pAnalysisResouceAfter->shared_mem - before_resources->shared_mem;
 
   // unexpected value; resource is negative number
   if (pAnalysisResouceNow->cpu_utime < 0) {
