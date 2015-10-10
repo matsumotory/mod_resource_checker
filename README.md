@@ -2,6 +2,8 @@
 
 Process Resource Logging Module using JSON format into file or piped program.
 
+Supported apache2.2.x and apache2.4.x with prefork mpm.
+
 ```
 tail -n 1 /path/to/resource.log | jq .
 ```
