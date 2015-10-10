@@ -53,19 +53,6 @@
 #define __APACHE24__
 #endif
 
-#if (AP_SERVER_MAJORVERSION_NUMBER > 1)
-#define __MOD_APACHE2__
-#endif
-
-#ifdef __MOD_APACHE1__
-#include "ap_alloc.h"
-#endif
-#ifdef __MOD_APACHE2__
-#include "apr_strings.h"
-#endif
-#ifdef __MOD_DEBUG__
-#include <syslog.h>
-#endif
 
 #define MODULE_NAME "mod_resource_checker"
 #define MODULE_VERSION "0.6.2"
@@ -76,10 +63,6 @@
 /* --- Macro Difinition --- */
 /* ------------------------ */
 #define INITIAL_VALUE 0
-#ifdef __MOD_APACHE1__
-#define MOD_RESOURCE_CHECKER_LOG_FILE "/tmp/mod_resource_checker.log"
-#endif
-#ifdef __MOD_APACHE2__
 #define RESOURCE_CHECKER_DEFAULT_LOG_FILE "/tmp/mod_resource_checker.log"
 #define ap_palloc apr_palloc
 #define ap_pcalloc apr_pcalloc
@@ -90,7 +73,6 @@
 #define ap_pvsprintf apr_pvsprintf
 #define ap_snprintf apr_snprintf
 #define ap_vsnprintf apr_vsnprintf
-#endif
 
 /* ----------------------------------- */
 /* --- Struct and Typed Definition --- */
@@ -140,44 +122,12 @@ typedef struct resource_checker_conf {
 char mod_resource_checker_version[] = "mod_version 0.01";
 int resource_checker_initialized = 0;
 
-#ifdef __MOD_APACHE1__
-FILE *mod_resource_checker_log_fp = NULL;
-#endif
-#ifdef __MOD_APACHE2__
 apr_file_t *mod_resource_checker_log_fp = NULL;
-#endif
 
 /* ------------------------- */
 /* --- Module Definition --- */
 /* ------------------------- */
-#ifdef __MOD_APACHE1__
-module MODULE_VAR_EXPORT resource_checker_module;
-#endif
-#ifdef __MOD_APACHE2__
 module AP_MODULE_DECLARE_DATA resource_checker_module;
-#endif
-
-/* --------------------------------------- */
-/* --- Debug in SYSLOG Logging Routine --- */
-/* --------------------------------------- */
-#ifdef __MOD_DEBUG__
-char *fs_debug_resource_checker_log_buf = NULL;
-#ifdef __MOD_APACHE1__
-void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, pool *p)
-#endif
-#ifdef __MOD_APACHE2__
-    void RESOURCE_CHECKER_DEBUG_SYSLOG(const char *key, const char *msg, apr_pool_t *p)
-#endif
-{
-  char *fs_buf = NULL;
-
-  fs_buf = (char *)ap_psprintf(p, "%s%s", key, msg);
-
-  openlog(NULL, LOG_PID, LOG_SYSLOG);
-  syslog(LOG_DEBUG, fs_buf);
-  closelog();
-}
-#endif
 
 /* ------------------------------------------- */
 /* --- Request Transaction Logging Routine --- */
@@ -246,25 +196,14 @@ static void _mod_resource_checker_logging_all(request_rec *r, RESOURCE_DATA *dat
   json_object_put(log_obj);
 }
 
-#ifdef __MOD_APACHE1__
-static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold, char *process_type,
-                                          RESOURCE_CHECKER_D_CONF *pDirConf, ACCESS_INFO *pAccessInfoData,
-                                          const char *msg, const char *type, const char *unit, pool *p)
-#endif
-#ifdef __MOD_APACHE2__
-    static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold,
-                                              char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf,
-                                              ACCESS_INFO *pAccessInfoData, const char *msg, const char *type,
-                                              const char *unit, apr_pool_t *p)
-#endif
+static void _mod_resource_checker_logging(request_rec *r, double resource_time, double threshold,
+                                          char *process_type, RESOURCE_CHECKER_D_CONF *pDirConf,
+                                          ACCESS_INFO *pAccessInfoData, const char *msg, const char *type,
+                                          const char *unit, apr_pool_t *p)
 {
   char log_time[APR_CTIME_LEN];
   char *mod_resource_checker_log_buf;
   json_object *log_obj = NULL;
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "start", p);
-#endif
 
   ap_recent_ctime(log_time, r->request_time);
 
@@ -294,50 +233,26 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     json_object_object_add(log_obj, "result", json_object_new_double(resource_time));
 
     mod_resource_checker_log_buf = (char *)apr_psprintf(p, "%s\n", (char *)json_object_to_json_string(log_obj));
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "json log was created", p);
-#endif
   } else {
     mod_resource_checker_log_buf = (char *)ap_psprintf(
-        p
-        //, "[%s] pid=%d %s %.5f ] ServerName=(%s) target_dir=(%s) set_cpu_utime=(%.5f) set_cpu_stime=(%.5f) src_ip=(%s)
-        // access_file=(%s) access_uri=(%s)\n"
-        ,
+        p,
         "[%s] pid=%d %s: [ %s(%s) = %.10f (%s) > threshold=(%.5f) ] config_dir=(%s) src_ip=(%s) access_file=(%s) "
         "request=(%s)\n",
         log_time, getpid(), msg, type, unit, resource_time, process_type, threshold, pDirConf->target_dir,
         pAccessInfoData->access_src_ip, pAccessInfoData->access_file, r->the_request);
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "plain text log was created", p);
-#endif
   }
 
-#ifdef __MOD_APACHE1__
-  fputs(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
-  fflush(mod_resource_checker_log_fp);
-#endif
-#ifdef __MOD_APACHE2__
   apr_file_puts(mod_resource_checker_log_buf, mod_resource_checker_log_fp);
   apr_file_flush(mod_resource_checker_log_fp);
-#endif
 
   if (log_obj != NULL)
     json_object_put(log_obj);
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("_mod_resource_checker_logging: ", "end", p);
-#endif
 }
 
 /* ------------------------------------------- */
 /* --- Init Routine or ap_hook_post_config --- */
 /* ------------------------------------------- */
-#ifdef __MOD_APACHE1__
-static void resource_checker_init(server_rec *server, pool *p)
-#endif
-#ifdef __MOD_APACHE2__
-    static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp, server_rec *server)
-#endif
+static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp, server_rec *server)
 {
   RESOURCE_CHECKER_CONF *conf = ap_get_module_config(server->module_config, &resource_checker_module);
 
@@ -370,56 +285,14 @@ static void resource_checker_init(server_rec *server, pool *p)
   resource_checker_initialized = 1;
 
   return OK;
-  /*
-      struct stat;
-
-  #ifdef __MOD_DEBUG__
-      RESOURCE_CHECKER_DEBUG_SYSLOG("resource_checker_init: ", "start", p);
-  #endif
-
-  #ifdef __MOD_APACHE1__
-      mod_resource_checker_log_fp = (FILE *)ap_pfopen(p, MOD_RESOURCE_CHECKERLOG_FILE, "a");
-      if(mod_resource_checker_log_fp == NULL){
-          return;
-      }
-  #endif
-  #ifdef __MOD_APACHE2__
-      if(apr_file_open(&mod_resource_checker_log_fp, MOD_RESOURCE_CHECKERLOG_FILE, APR_WRITE|APR_APPEND|APR_CREATE,
-             APR_OS_DEFAULT, p) != APR_SUCCESS){
-          return OK;
-      }
-  #endif
-
-      resource_checker_initialized = 1;
-
-  #ifdef __MOD_DEBUG__
-      RESOURCE_CHECKER_DEBUG_SYSLOG("resource_checker_init: ", "end", p);
-  #endif
-
-  #ifdef __MOD_APACHE1__
-      return;
-  #endif
-  #ifdef __MOD_APACHE2__
-      return OK;
-  #endif
-  */
 }
 
 /* ---------------------------- */
 /* --- Create Dir Config --- */
 /* ---------------------------- */
-#ifdef __MOD_APACHE1__
-static void *resource_checker_create_dir_config(pool *p, char *d)
-#endif
-#ifdef __MOD_APACHE2__
-    static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
-#endif
+static void *resource_checker_create_dir_config(apr_pool_t *p, char *dir)
 {
   RESOURCE_CHECKER_D_CONF *pDirConf = (RESOURCE_CHECKER_D_CONF *)ap_palloc(p, sizeof(RESOURCE_CHECKER_D_CONF));
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("resource_checker_create_dir_config: ", "start", p);
-#endif
 
   pDirConf->cpu_utime = INITIAL_VALUE;
   pDirConf->cpu_stime = INITIAL_VALUE;
@@ -435,10 +308,6 @@ static void *resource_checker_create_dir_config(pool *p, char *d)
   } else {
     pDirConf->target_dir = ap_pstrdup(p, dir);
   }
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("resource_checker_create_dir_config: ", "end", p);
-#endif
 
   return pDirConf;
 }
@@ -459,10 +328,6 @@ static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 {
   RESOURCE_CHECKER_D_CONF *pDirConf;
 
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_utime_resouce: ", "start", cmd->pool);
-#endif
-
   if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 &&
       strcmp(arg2, "ALL") == -1)
     return "RCheckUCPU: arg2 is SELF or CHILD or or THREAD or ALL!";
@@ -474,17 +339,6 @@ static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
   pDirConf->cpu_utime = atof(arg1);
   pDirConf->utime_process_type = ap_pstrdup(cmd->pool, arg2);
 
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(cmd->pool, "pDirConf->target_dir=(%s) pDirConf->cpu_utime=(%lf) pDirConf->utime_process_type=(%s)",
-                  pDirConf->target_dir, pDirConf->cpu_utime, pDirConf->utime_process_type);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_utime_resouce: ", fs_debug_resource_checker_log_buf, cmd->pool);
-#endif
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_utime_resouce: ", "end", cmd->pool);
-#endif
-
   return NULL;
 }
 
@@ -494,10 +348,6 @@ static const char *set_cpu_utime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *arg2)
 {
   RESOURCE_CHECKER_D_CONF *pDirConf;
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_stime_resouce: ", "start", cmd->pool);
-#endif
 
   if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 &&
       strcmp(arg2, "ALL") == -1)
@@ -510,17 +360,6 @@ static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
   pDirConf->cpu_stime = atof(arg1);
   pDirConf->stime_process_type = ap_pstrdup(cmd->pool, arg2);
 
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(cmd->pool, "pDirConf->target_dir=(%s) pDirConf->cpu_stime=(%lf) pDirConf->stime_process_type=(%s)",
-                  pDirConf->target_dir, pDirConf->cpu_stime, pDirConf->stime_process_type);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_stime_resouce: ", fs_debug_resource_checker_log_buf, cmd->pool);
-#endif
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_cpu_stime_resouce: ", "end", cmd->pool);
-#endif
-
   return NULL;
 }
 
@@ -530,10 +369,6 @@ static const char *set_cpu_stime_resouce(cmd_parms *cmd, void *dir_config_fmt, c
 static const char *set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, char *arg1, char *arg2)
 {
   RESOURCE_CHECKER_D_CONF *pDirConf;
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_shared_mem_resouce: ", "start", cmd->pool);
-#endif
 
   if (strcmp(arg2, "SELF") == -1 && strcmp(arg2, "CHILD") == -1 && strcmp(arg2, "THREAD") == -1 &&
       strcmp(arg2, "ALL") == -1)
@@ -545,17 +380,6 @@ static const char *set_shared_mem_resouce(cmd_parms *cmd, void *dir_config_fmt, 
   pDirConf = (RESOURCE_CHECKER_D_CONF *)dir_config_fmt;
   pDirConf->shared_mem = atof(arg1);
   pDirConf->mem_process_type = ap_pstrdup(cmd->pool, arg2);
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(cmd->pool, "pDirConf->target_dir=(%s) pDirConf->shared_mem=(%lf) pDirConf->mem_process_type=(%s)",
-                  pDirConf->target_dir, pDirConf->shared_mem, pDirConf->mem_process_type);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_shared_mem_resouce: ", fs_debug_resource_checker_log_buf, cmd->pool);
-#endif
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("set_shared_mem_resouce: ", "end", cmd->pool);
-#endif
 
   return NULL;
 }
@@ -599,13 +423,7 @@ static double get_time_from_rutime(time_t sec, suseconds_t usec)
 /* ----------------------------- */
 /* --- get process resources --- */
 /* ----------------------------- */
-static double
-#ifdef __MOD_APACHE1__
-_get_rusage_utime_resource(pool *p)
-#endif
-#ifdef __MOD_APACHE2__
-    _get_rusage_resource(apr_pool_t *p, char *type, char *member)
-#endif
+static double _get_rusage_resource(apr_pool_t *p, char *type, char *member)
 {
   struct rusage *resources;
   struct rusage *resources_s;
@@ -614,10 +432,6 @@ _get_rusage_utime_resource(pool *p)
   RESOURCE_DATA *pAnalysisResouce;
   pAnalysisResouce = (RESOURCE_DATA *)ap_pcalloc(p, sizeof(RESOURCE_DATA));
   resources = (struct rusage *)ap_pcalloc(p, sizeof(struct rusage));
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "start", p);
-#endif
 
   if (strcmp(type, "SELF") == 0) {
     if (getrusage(RUSAGE_SELF, resources) == -1) {
@@ -664,40 +478,13 @@ _get_rusage_utime_resource(pool *p)
   // unexpected value; resource is negative number
   if (pAnalysisResouce->cpu_utime < 0) {
     pAnalysisResouce->cpu_utime = 0;
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "cpu_utime is negative number, set 0 for now.", p);
-#endif
   }
   if (pAnalysisResouce->cpu_stime < 0) {
     pAnalysisResouce->cpu_stime = 0;
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "cpu_stime is negative number, set 0 for now.", p);
-#endif
   }
   if (pAnalysisResouce->shared_mem < 0) {
     pAnalysisResouce->shared_mem = 0;
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "shared_mem is negative number, set 0 for now.", p);
-#endif
   }
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf = ap_psprintf(
-      p, "type=(%s) ru_utime=(%lf) ru_stime=(%lf) ru_utime.tv_sec=(%ld) ru_utime.tv_usec=(%ld) ru_stime.tv_sec=(%ld) "
-         "ru_stime.tv_usec=(%ld) ru_ixrss=(%ld) ru_idrss=(%ld) ru_isrss=(%ld) ru_minflt=(%ld) ru_majflt=(%ld) "
-         "ru_nswap=(%ld) ru_inblock=(%ld) ru_oublock=(%ld) ru_msgsnd=(%ld) ru_msgrcv=(%ld) ru_nsignals=(%ld) "
-         "ru_nvcsw=(%ld) ru_nivcsw=(%ld) getpagesize=(%d)",
-      type, pAnalysisResouce->cpu_utime, pAnalysisResouce->cpu_stime, resources->ru_utime.tv_sec,
-      resources->ru_utime.tv_usec, resources->ru_stime.tv_sec, resources->ru_stime.tv_usec, resources->ru_ixrss,
-      resources->ru_idrss, resources->ru_isrss, resources->ru_minflt, resources->ru_majflt, resources->ru_nswap,
-      resources->ru_inblock, resources->ru_oublock, resources->ru_msgsnd, resources->ru_msgrcv, resources->ru_nsignals,
-      resources->ru_nvcsw, resources->ru_nivcsw, getpagesize());
-  RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", fs_debug_resource_checker_log_buf, p);
-#endif
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("_get_rusage_resource: ", "end", p);
-#endif
 
   if (strcmp(member, "cpu_utime") == 0) {
     return pAnalysisResouce->cpu_utime;
@@ -726,33 +513,13 @@ static int before_resource_checker(request_rec *r)
   int match;
   struct stat sb;
 
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", "start", r->pool);
-#endif
-
   if (resource_checker_initialized == 0) {
     return OK;
   }
 
-#ifdef __MOD_APACHE1__
-  if (r->main) {
-    return OK;
-  }
-#endif
-
-#ifdef __MOD_APACHE2__
   if (r->main && (stat(r->filename, &sb) == -1) && errno == ENOENT) {
     return OK;
   }
-#endif
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(r->pool, "pDirConf: pDirConf->target_dir=(%s) pDirConf->cpu_utime=(%lf) pDirConf->cpu_stime=(%lf) "
-                           "pDirConf->shared_mem=(%lf)",
-                  pDirConf->target_dir, pDirConf->cpu_utime, pDirConf->cpu_stime, pDirConf->shared_mem);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
-#endif
 
   match = 0;
   pAnalysisResouceBefore->cpu_utime = INITIAL_VALUE;
@@ -784,23 +551,8 @@ static int before_resource_checker(request_rec *r)
   }
 
   if (match == 0) {
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", "no match dir end", r->pool);
-#endif
     return OK;
   }
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf = ap_psprintf(
-      r->pool, "pAnalysisResouceBefore->cpu_utime=(%lf[sec]) pAnalysisResouceBefore->cpu_stime=(%lf[sec]) "
-               "pAnalysisResouceBefore->shared_mem=(%lf[kb])",
-      pAnalysisResouceBefore->cpu_utime, pAnalysisResouceBefore->cpu_stime, pAnalysisResouceBefore->shared_mem);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
-#endif
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("before_resource_checker: ", "end", r->pool);
-#endif
 
   return OK;
 }
@@ -828,49 +580,28 @@ static int after_resource_checker(request_rec *r)
   ACCESS_INFO *pAccessInfoData;
   pAccessInfoData = (ACCESS_INFO *)ap_pcalloc(r->pool, sizeof(ACCESS_INFO));
 
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "start", r->pool);
-#endif
-
   if (resource_checker_initialized == 0) {
     return OK;
   }
 
-#ifdef __MOD_APACHE1__
-  if (r->main) {
-    return OK;
-  }
-#endif
-
-#ifdef __MOD_APACHE2__
   if (r->main && (stat(r->filename, &sb) == -1) && errno == ENOENT) {
     return OK;
   }
-#endif
 
   pAccessInfoData->access_uri = r->uri;
   pAccessInfoData->access_file = r->filename;
-#if (AP_SERVER_MINORVERSION_NUMBER > 2)
+#ifdef __APACHE24__
   pAccessInfoData->access_src_ip = r->connection->client_ip;
 #else
   pAccessInfoData->access_src_ip = r->connection->remote_ip;
 #endif
   pAccessInfoData->access_dst_host = r->server->server_hostname;
 
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(r->pool, "pDirConf: pDirConf->target_dir=(%s) pDirConf->cpu_utime=(%lf) pDirConf->cpu_stime=(%lf) "
-                           "pDirConf->shared_mem=(%lf)",
-                  pDirConf->target_dir, pDirConf->cpu_utime, pDirConf->cpu_stime, pDirConf->shared_mem);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
-#endif
-
   if (pDirConf->check_status == ON) {
     _mod_resource_checker_logging(r, 0, 0, NULL, pDirConf, pAccessInfoData, MODULE_NAME, "RCheckSTATUS", NULL, r->pool);
   }
 
   // threashould check
-
   if (pAnalysisResouceBefore == NULL) {
     ap_log_rerror(APLOG_MARK, APLOG_NOTICE, 0, r, "%s NOTICE %s: Can not check resource of the request: file = %s",
                   MODULE_NAME, __func__, r->filename);
@@ -907,29 +638,8 @@ static int after_resource_checker(request_rec *r)
   }
 
   if (match == 0) {
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "no match dir end", r->pool);
-#endif
     return OK;
   }
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(r->pool, "file=(%s) pAnalysisResouceBefore->cpu_utime=(%lf[sec]) "
-                           "pAnalysisResouceBefore->cpu_stime=(%lf[sec]) pAnalysisResouceBefore->shared_mem=(%lf[MB])",
-                  pAccessInfoData->access_file, pAnalysisResouceBefore->cpu_utime, pAnalysisResouceBefore->cpu_stime,
-                  pAnalysisResouceBefore->shared_mem);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
-#endif
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(r->pool, "file=(%s) pAnalysisResouceAfter->cpu_utime=(%lf[sec]) "
-                           "pAnalysisResouceAfter->cpu_stime=(%lf[sec]) pAnalysisResouceAfter->shared_mem=(%lf[MB])",
-                  pAccessInfoData->access_file, pAnalysisResouceAfter->cpu_utime, pAnalysisResouceAfter->cpu_stime,
-                  pAnalysisResouceAfter->shared_mem);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
-#endif
 
   pAnalysisResouceNow->cpu_utime = pAnalysisResouceAfter->cpu_utime - pAnalysisResouceBefore->cpu_utime;
   pAnalysisResouceNow->cpu_stime = pAnalysisResouceAfter->cpu_stime - pAnalysisResouceBefore->cpu_stime;
@@ -938,31 +648,13 @@ static int after_resource_checker(request_rec *r)
   // unexpected value; resource is negative number
   if (pAnalysisResouceNow->cpu_utime < 0) {
     pAnalysisResouceNow->cpu_utime = 0;
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "cpu_utime is negative number, set 0 for now.", r->pool);
-#endif
   }
   if (pAnalysisResouceNow->cpu_stime < 0) {
     pAnalysisResouceNow->cpu_stime = 0;
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "cpu_stime is negative number, set 0 for now.", r->pool);
-#endif
   }
   if (pAnalysisResouceNow->shared_mem < 0) {
     pAnalysisResouceNow->shared_mem = 0;
-#ifdef __MOD_DEBUG__
-    RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "shared_mem is negative number, set 0 for now.", r->pool);
-#endif
   }
-
-#ifdef __MOD_DEBUG__
-  fs_debug_resource_checker_log_buf =
-      ap_psprintf(r->pool, "file=(%s) pAnalysisResouceNow->cpu_utime=(%lf[sec]) "
-                           "pAnalysisResouceNow->cpu_stime=(%lf[sec]) pAnalysisResouceNow->shared_mem=(%lf[MB])",
-                  pAccessInfoData->access_file, pAnalysisResouceNow->cpu_utime, pAnalysisResouceNow->cpu_stime,
-                  pAnalysisResouceNow->shared_mem);
-  RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", fs_debug_resource_checker_log_buf, r->pool);
-#endif
 
   if (pDirConf->cpu_utime > INITIAL_VALUE && pAnalysisResouceNow->cpu_utime >= pDirConf->cpu_utime) {
     _mod_resource_checker_logging(r, pAnalysisResouceNow->cpu_utime, pDirConf->cpu_utime, pDirConf->utime_process_type,
@@ -982,10 +674,6 @@ static int after_resource_checker(request_rec *r)
   if (pDirConf->check_all == ON && pDirConf->json_fmt == ON) {
     _mod_resource_checker_logging_all(r, pAnalysisResouceNow, pDirConf, pAccessInfoData, r->pool);
   }
-
-#ifdef __MOD_DEBUG__
-  RESOURCE_CHECKER_DEBUG_SYSLOG("after_resource_checker: ", "end", r->pool);
-#endif
 
   return OK;
 }
@@ -1016,7 +704,7 @@ static void resource_checker_register_hooks(apr_pool_t *p)
   ap_hook_log_transaction(after_resource_checker, NULL, NULL, APR_HOOK_LAST);
 }
 
-#if (AP_SERVER_MINORVERSION_NUMBER > 2)
+#ifdef __APACHE24__
 AP_DECLARE_MODULE(resource_checker) = {
 #else
 module AP_MODULE_DECLARE_DATA resource_checker_module = {
