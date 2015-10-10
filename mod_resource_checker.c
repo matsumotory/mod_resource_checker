@@ -195,12 +195,9 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
     json_object_object_add(log_obj, "date", mod_rc_json_object_new_string(log_time));
     json_object_object_add(log_obj, "type", mod_rc_json_object_new_string(type));
     json_object_object_add(log_obj, "unit", mod_rc_json_object_new_string(unit));
-    json_object_object_add(log_obj, "location",
-                           mod_rc_json_object_new_string(dconf->target_dir));
-    json_object_object_add(log_obj, "remote_ip",
-                           mod_rc_json_object_new_string(cdata->access_src_ip));
-    json_object_object_add(log_obj, "filename",
-                           mod_rc_json_object_new_string(cdata->access_file));
+    json_object_object_add(log_obj, "location", mod_rc_json_object_new_string(dconf->target_dir));
+    json_object_object_add(log_obj, "remote_ip", mod_rc_json_object_new_string(cdata->access_src_ip));
+    json_object_object_add(log_obj, "filename", mod_rc_json_object_new_string(cdata->access_file));
     json_object_object_add(log_obj, "scheme", mod_rc_json_object_new_string(ap_http_scheme(r)));
     json_object_object_add(log_obj, "method", mod_rc_json_object_new_string(r->method));
     json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->hostname));
