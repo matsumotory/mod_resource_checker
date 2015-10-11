@@ -237,6 +237,15 @@ static void _mod_resource_checker_logging(request_rec *r, double resource_time, 
 static int resource_checker_init(apr_pool_t *p, apr_pool_t *plog, apr_pool_t *ptemp, server_rec *server)
 {
   mod_rc_conf *conf = ap_get_module_config(server->module_config, &resource_checker_module);
+  void *data;
+  const char *userdata_key = "resource_checker_init";
+
+  apr_pool_userdata_get(&data, userdata_key, server->process->pool);
+
+  if (!data) {
+    apr_pool_userdata_set((const void *)1, userdata_key, apr_pool_cleanup_null, server->process->pool);
+    return OK;
+  }
 
   if (*conf->log_filename == '|') {
     piped_log *pl;
