@@ -4,9 +4,26 @@ Process Resource Logging Module using JSON format into file or piped program.
 
 Supported apache2.2.x and apache2.4.x with prefork mpm.
 
+- setup `conf.d/mod_resource_checker.conf`
+
+```apache
+LoadModule resource_checker_module modules/mod_resource_checker.so
+
+RCheckLogPath /var/log/httpd/resoruce.log
+RCheckRealServerName www.matsumoto-r.jp
+
+<Location />
+  RCheckALL On
+</Location>
 ```
-tail -n 1 /path/to/resource.log | jq .
+
+- check log file 
+
 ```
+tail -n 1 /var/log/httpd/resoruce.log | jq .
+```
+
+- output logs
 
 ```json
 {
@@ -43,6 +60,7 @@ tail -n 1 /path/to/resource.log | jq .
 ```
 (optional) yum install json-c json-c-devel
 make
+suod make install
 ```
 
 - Add to  httpd.conf
@@ -69,12 +87,19 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 
     It's very cool.
 
+- logging real server name
+
+```
+RCheckRealServerName www.matsumoto-r.jp
+```
 
 ### Directive Config
 - Logging all status and resources log
 
 ```apache
-RCheckALL On
+<Location />
+  RCheckALL On
+</Location>
 ```
 
 ```json
@@ -110,7 +135,9 @@ RCheckALL On
 - Logging all request which don't include resouces data
 
 ```apache
-RCheckSTATUS On
+<Location />
+  RCheckSTATUS On
+</Location>
 ```
 
 ```json
