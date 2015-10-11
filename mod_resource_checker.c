@@ -103,6 +103,7 @@ typedef struct mod_rc_client_data_st {
 typedef struct mod_rc_conf_st {
 
   char *log_filename;
+  char *real_server_name;
 
 } mod_rc_conf;
 
@@ -134,7 +135,7 @@ static json_object *mod_rc_json_object_new_string(const char *str)
   return json_object_new_string(str);
 }
 
-static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *data, mod_rc_dir_conf *conf,
+static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *data, mod_rc_dir_conf *conf, mod_rc_conf *sconf,
                                               mod_rc_client_data *info, apr_pool_t *p)
 {
   char log_time[APR_CTIME_LEN];
@@ -157,6 +158,8 @@ static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *dat
   json_object_object_add(log_obj, "method", mod_rc_json_object_new_string(r->method));
   json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->hostname));
   json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->uri));
+  json_object_object_add(log_obj, "real_server_name", mod_rc_json_object_new_string(sconf->real_server_name));
+
   json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
   json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
   json_object_object_add(log_obj, "content_length", json_object_new_int(r->clength));
@@ -295,6 +298,7 @@ static void *resource_checker_create_config(apr_pool_t *p, server_rec *s)
   mod_rc_conf *conf = (mod_rc_conf *)apr_pcalloc(p, sizeof(*conf));
 
   conf->log_filename = apr_pstrdup(p, RESOURCE_CHECKER_DEFAULT_LOG_FILE);
+  conf->real_server_name = NULL;
 
   return conf;
 }
@@ -387,6 +391,13 @@ static const char *set_rcheck_logname(cmd_parms *cmd, void *dir_config_fmt, cons
 {
   mod_rc_conf *conf = ap_get_module_config(cmd->server->module_config, &resource_checker_module);
   conf->log_filename = apr_pstrdup(cmd->pool, log_filename);
+  return NULL;
+}
+
+static const char *set_real_server_name(cmd_parms *cmd, void *dir_config_fmt, const char *name)
+{
+  mod_rc_conf *conf = ap_get_module_config(cmd->server->module_config, &resource_checker_module);
+  conf->real_server_name = apr_pstrdup(cmd->pool, name);
   return NULL;
 }
 
@@ -540,6 +551,7 @@ static int before_resource_checker(request_rec *r)
 static int after_resource_checker(request_rec *r)
 {
   mod_rc_dir_conf *dconf = (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+  mod_rc_conf *sconf = (mod_rc_conf *)ap_get_module_config(r->server->module_config, &resource_checker_module);
   mod_rc_rusage *before_resources = dconf->before_resources;
 
   if (dconf->cpu_utime == INITIAL_VALUE && dconf->cpu_stime == INITIAL_VALUE && dconf->shared_mem == INITIAL_VALUE &&
@@ -648,7 +660,7 @@ static int after_resource_checker(request_rec *r)
   }
 
   if (dconf->check_all == ON && dconf->json_fmt == ON) {
-    _mod_resource_checker_logging_all(r, use_resources, dconf, cdata, r->pool);
+    _mod_resource_checker_logging_all(r, use_resources, dconf, sconf, cdata, r->pool);
   }
 
   return OK;
@@ -668,6 +680,7 @@ static const command_rec resource_checker_cmds[] = {
     AP_INIT_FLAG("RCheckSTATUS", set_status_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output STATUS log only."),
     AP_INIT_FLAG("RCheckALL", set_all_resource, NULL, RSRC_CONF | ACCESS_CONF, "Output all resource log on one line."),
     AP_INIT_TAKE1("RCheckLogPath", set_rcheck_logname, NULL, RSRC_CONF | ACCESS_CONF, "RCheck log name."),
+    AP_INIT_TAKE1("RCheckRealServerName", set_real_server_name, NULL, RSRC_CONF | ACCESS_CONF, "Set real server name"),
     {NULL}};
 
 /* -------------- */
