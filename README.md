@@ -11,31 +11,31 @@ tail -n 1 /path/to/resource.log | jq .
 ```json
 {
   "result": {
-    "RCheckMEM": 39.011719,
-    "RCheckSCPU": 0.06999,
-    "RCheckUCPU": 0.687896
+    "RCheckMEM": 39.023438,
+    "RCheckSCPU": 0.055992,
+    "RCheckUCPU": 0.481926
   },
   "response_time": 0,
   "threshold": null,
-  "pid": 19748,
+  "pid": 22533,
+  "status": 200,
   "scheme": "http",
   "filename": "/usr/local/apache244/htdocs/blog/index.php",
   "remote_ip": "127.0.0.1",
   "location": "/",
   "unit": null,
   "type": "RCheckALL",
-  "date": "Sun Oct 11 16:10:42 2015",
+  "date": "Sun Oct 11 18:08:12 2015",
   "module": "mod_resource_checker",
   "method": "GET",
   "hostname": "blog.matsumoto-r.jp",
   "server_ip": "127.0.0.1",
   "uri": "/index.php",
+  "real_server_name": "www.matsumoto-r.jp",
   "uid": 2,
   "size": 418,
-  "content_length": 2498,
-  "status": 200
+  "content_length": 2498
 }
-
 ```
 
 ##How To Compile
@@ -75,24 +75,31 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 
 ```json
 {
-  "module": "mod_request_checker",
-  "date": "Thu Sep 17 11:48:57 2015",
-  "type": "RCheckMEM",
-  "unit": "MiB",
-  "response_time": 5,
-  "location": "/path/to/",
-  "remote_ip": "192.168.0.1",
-  "filename": "/path/to/phpinfo.php",
-  "scheme": "http",
-  "method": "GET",
-  "hostname": "test001.example.jp",
-  "uri": "/phpinfo.php",
-  "uid": 929643,
+  "result": {
+    "RCheckMEM": 39.023438,
+    "RCheckSCPU": 0.055992,
+    "RCheckUCPU": 0.481926
+  },
+  "response_time": 0,
+  "threshold": null,
+  "pid": 22533,
   "status": 200,
-  "size": 20,
-  "pid": 3220,
-  "threshold": 0.1,
-  "result": 2.597656
+  "scheme": "http",
+  "filename": "/usr/local/apache244/htdocs/blog/index.php",
+  "remote_ip": "127.0.0.1",
+  "location": "/",
+  "unit": null,
+  "type": "RCheckALL",
+  "date": "Sun Oct 11 18:08:12 2015",
+  "module": "mod_resource_checker",
+  "method": "GET",
+  "hostname": "blog.matsumoto-r.jp",
+  "server_ip": "127.0.0.1",
+  "uri": "/index.php",
+  "real_server_name": "www.matsumoto-r.jp",
+  "uid": 2,
+  "size": 418,
+  "content_length": 2498
 }
 ```
 
