@@ -54,7 +54,7 @@
 #endif
 
 #define MODULE_NAME "mod_resource_checker"
-#define MODULE_VERSION "0.6.3"
+#define MODULE_VERSION "0.7.3"
 #define ON 1
 #define OFF 0
 
@@ -156,7 +156,8 @@ static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *dat
   json_object_object_add(log_obj, "filename", mod_rc_json_object_new_string(info->access_file));
   json_object_object_add(log_obj, "scheme", mod_rc_json_object_new_string(ap_http_scheme(r)));
   json_object_object_add(log_obj, "method", mod_rc_json_object_new_string(r->method));
-  json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->hostname));
+  json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->server->server_hostname));
+  json_object_object_add(log_obj, "server_ip", mod_rc_json_object_new_string(r->connection->local_ip));
   json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->uri));
   json_object_object_add(log_obj, "real_server_name", mod_rc_json_object_new_string(sconf->real_server_name));
 

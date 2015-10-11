@@ -8,7 +8,7 @@ TARGET=mod_resource_checker.c
 
 #   the used tools
 APXS=apxs
-APACHECTL=apachectl -k
+APACHECTL=apachectl
 
 #   additional user defines, includes and libraries
 DEF=
