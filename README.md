@@ -71,7 +71,11 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 
 
 ### Directive Config
-- Output Format
+- Logging all status and resources log
+
+```apache
+RCheckALL On
+```
 
 ```json
 {
@@ -103,41 +107,6 @@ LoadModule resource_checker_module modules/mod_resource_checker.so
 }
 ```
 
-- Logging all status and resources log
-
-```apache
-RCheckALL On
-```
-
-```json
-{
-  "result": {
-    "RCheckMEM": 39.011719,
-    "RCheckSCPU": 0.06999,
-    "RCheckUCPU": 0.687896
-  },
-  "response_time": 0,
-  "threshold": null,
-  "pid": 19748,
-  "scheme": "http",
-  "filename": "/usr/local/apache244/htdocs/blog/index.php",
-  "remote_ip": "127.0.0.1",
-  "location": "/",
-  "unit": null,
-  "type": "RCheckALL",
-  "date": "Sun Oct 11 16:10:42 2015",
-  "module": "mod_resource_checker",
-  "method": "GET",
-  "hostname": "blog.matsumoto-r.jp",
-  "server_ip": "127.0.0.1",
-  "uri": "/index.php",
-  "uid": 2,
-  "size": 418,
-  "content_length": 2498,
-  "status": 200
-}
-```
-
 - Logging all request which don't include resouces data
 
 ```apache
@@ -148,22 +117,25 @@ RCheckSTATUS On
 {
   "result": 0,
   "response_time": 0,
+  "threshold": null,
+  "pid": 22533,
+  "status": 200,
   "scheme": "http",
-  "filename": "/var/www/html/index.html",
+  "filename": "/usr/local/apache244/htdocs/blog/index.php",
   "remote_ip": "127.0.0.1",
   "location": "/",
-  "unit": "null",
+  "unit": null,
   "type": "RCheckSTATUS",
-  "date": "Fri Oct 09 15:43:26 2015",
+  "date": "Sun Oct 11 18:08:12 2015",
   "module": "mod_resource_checker",
   "method": "GET",
-  "hostname": "127.0.0.1",
-  "uri": "/index.html",
-  "uid": 0,
-  "size": 7,
-  "status": 200,
-  "pid": 20572,
-  "threshold": 0
+  "hostname": "blog.matsumoto-r.jp",
+  "server_ip": "127.0.0.1",
+  "uri": "/index.php",
+  "real_server_name": "www.matsumoto-r.jp",
+  "uid": 2,
+  "size": 418,
+  "content_length": 2498
 }
 ```
 
