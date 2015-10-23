@@ -84,6 +84,7 @@ typedef struct mod_rc_dir_conf_st {
   char *stime_process_type;
   char *mem_process_type;
   char *target_dir;
+  char *handler_copy;
   int json_fmt;
   int check_status;
   int check_all;
@@ -159,7 +160,7 @@ static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *dat
   json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->server->server_hostname));
   json_object_object_add(log_obj, "server_ip", mod_rc_json_object_new_string(r->connection->local_ip));
   json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->uri));
-  json_object_object_add(log_obj, "handler", mod_rc_json_object_new_string(r->handler));
+  json_object_object_add(log_obj, "handler", mod_rc_json_object_new_string(conf->handler_copy));
   json_object_object_add(log_obj, "real_server_name", mod_rc_json_object_new_string(sconf->real_server_name));
 
   json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
@@ -556,6 +557,21 @@ static int before_resource_checker(request_rec *r)
   return OK;
 }
 
+static int resource_checker_handler(request_rec *r)                              
+{                                                                                
+  mod_rc_dir_conf *dconf = (mod_rc_dir_conf *)ap_get_module_config(r->per_dir_config, &resource_checker_module);
+
+  // dup handler for loggin
+  if (r->handler != NULL)
+    dconf->handler_copy = apr_pstrdup(r->pool, r->handler);
+  else
+    dconf->handler_copy = NULL;
+
+  ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL, "%s ERROR %s: r->handler=%s", MODULE_NAME, __func__, r->handler);
+
+  return DECLINED;
+}
+
 /* ------------------------------------------------- */
 /* --- log transantion (ap_hook_log_transaction) --- */
 /* ------------------------------------------------- */
@@ -701,6 +717,7 @@ static void resource_checker_register_hooks(apr_pool_t *p)
 {
   ap_hook_post_config((void *)resource_checker_init, NULL, NULL, APR_HOOK_MIDDLE);
   ap_hook_access_checker(before_resource_checker, NULL, NULL, APR_HOOK_LAST);
+  ap_hook_fixups(resource_checker_handler, NULL, NULL, APR_HOOK_LAST);
   ap_hook_log_transaction(after_resource_checker, NULL, NULL, APR_HOOK_LAST);
 }
 
