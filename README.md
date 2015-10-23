@@ -4,6 +4,9 @@ Process Resource Logging Module using JSON format into file or piped program.
 
 Supported apache2.2.x and apache2.4.x with prefork mpm.
 
+[rcheck-analyze](https://github.com/matsumoto-r/rcheck-analyzer) is analyze tool for mod_resource_checker log.
+　
+
 - setup `conf.d/mod_resource_checker.conf`
 
 ```apache
