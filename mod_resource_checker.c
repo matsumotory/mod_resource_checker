@@ -159,17 +159,18 @@ static void _mod_resource_checker_logging_all(request_rec *r, mod_rc_rusage *dat
   json_object_object_add(log_obj, "method", mod_rc_json_object_new_string(r->method));
   json_object_object_add(log_obj, "hostname", mod_rc_json_object_new_string(r->server->server_hostname));
   json_object_object_add(log_obj, "server_ip", mod_rc_json_object_new_string(r->connection->local_ip));
-  json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->uri));
+  json_object_object_add(log_obj, "uri", mod_rc_json_object_new_string(r->unparsed_uri));
   json_object_object_add(log_obj, "handler", mod_rc_json_object_new_string(conf->handler_copy));
   json_object_object_add(log_obj, "real_server_name", mod_rc_json_object_new_string(sconf->real_server_name));
 
   json_object_object_add(log_obj, "uid", json_object_new_int(r->finfo.user));
-  json_object_object_add(log_obj, "size", json_object_new_int(r->finfo.size));
-  json_object_object_add(log_obj, "content_length", json_object_new_int(r->clength));
   json_object_object_add(log_obj, "status", json_object_new_int(r->status));
   json_object_object_add(log_obj, "pid", json_object_new_int(getpid()));
   json_object_object_add(log_obj, "threshold", NULL);
   json_object_object_add(log_obj, "response_time", json_object_new_double(resource_checker_response_time(r)));
+
+  json_object_object_add(log_obj, "size", json_object_new_double(r->finfo.size));
+  json_object_object_add(log_obj, "bytes_sent", json_object_new_double(r->bytes_sent));
 
   json_object_object_add(result_obj, "RCheckUCPU", json_object_new_double(data->cpu_utime));
   json_object_object_add(result_obj, "RCheckSCPU", json_object_new_double(data->cpu_stime));
