@@ -568,8 +568,6 @@ static int resource_checker_handler(request_rec *r)
   else
     dconf->handler_copy = NULL;
 
-  ap_log_error(APLOG_MARK, APLOG_ERR, 0, NULL, "%s ERROR %s: r->handler=%s", MODULE_NAME, __func__, r->handler);
-
   return DECLINED;
 }
 
