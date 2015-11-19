@@ -125,7 +125,7 @@ module AP_MODULE_DECLARE_DATA resource_checker_module;
 static double resource_checker_response_time(request_rec *r)
 {
   apr_time_t duration = apr_time_now() - r->request_time;
-  return (double)(apr_time_msec(duration) / 1000);
+  return ((double)duration / (double)1000000);
 }
 
 static json_object *mod_rc_json_object_new_string(const char *str)
