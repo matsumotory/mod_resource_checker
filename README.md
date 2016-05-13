@@ -64,7 +64,7 @@ tail -n 1 /var/log/httpd/resoruce.log | jq .
 ```
 (optional) yum install json-c json-c-devel
 make
-suod make install
+sudo make install
 ```
 
 - Add to  httpd.conf
