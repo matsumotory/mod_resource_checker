@@ -30,7 +30,7 @@ env:
     APXS_CHECK_CMD="../${HTTPD_VERSION}/apache/bin/apachectl -v"
     VHOST_CONF="test/mod_resource_checker.conf"
   # for apache2.4.x with event
-  - HTTPD_VERSION=httpd-2.4.17 
+  - HTTPD_VERSION=httpd-2.4.20 
     HTTPD_CONFIG_OPT="--with-mpm=event"
     APR=apr-1.5.2 
     APR_UTIL=apr-util-1.5.4 
@@ -40,7 +40,7 @@ env:
     APXS_CHECK_CMD="../${HTTPD_VERSION}/apache/bin/apachectl -v"
     VHOST_CONF="test/mod_resource_checker.conf.2.4"
   # for apache2.4.x with worker
-  - HTTPD_VERSION=httpd-2.4.17 
+  - HTTPD_VERSION=httpd-2.4.20 
     HTTPD_CONFIG_OPT="--with-mpm=worker"
     APR=apr-1.5.2 
     APR_UTIL=apr-util-1.5.4 
@@ -50,7 +50,7 @@ env:
     APXS_CHECK_CMD="../${HTTPD_VERSION}/apache/bin/apachectl -v"
     VHOST_CONF="test/mod_resource_checker.conf.2.4"
   # for apache2.4.x with prefork
-  - HTTPD_VERSION=httpd-2.4.17 
+  - HTTPD_VERSION=httpd-2.4.20 
     HTTPD_CONFIG_OPT="--with-mpm=prefork"
     APR=apr-1.5.2 
     APR_UTIL=apr-util-1.5.4 
